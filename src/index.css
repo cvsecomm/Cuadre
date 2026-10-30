@@ -144,7 +144,7 @@ strong, .precio { font-variant-numeric: tabular-nums; }
 .aviso { background: var(--ambar-suave); color: var(--ambar); padding: 8px 12px; border-radius: 10px; font-size: .9rem; font-weight: 600; }
 
 /* Inventario */
-.tabla-fila { display: grid; grid-template-columns: 2.2fr 1fr 1fr 80px 140px; gap: 10px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--borde); }
+.tabla-fila { display: grid; grid-template-columns: 2.2fr 1fr 1fr 1.1fr 90px 130px; gap: 10px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--borde); }
 .tabla-fila.cabecera { color: var(--suave); font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
 .tabla-fila > span[data-label="Precio"] { color: var(--texto); font-weight: 700; font-family: var(--letra-titulo); }
 .tabla-fila > span[data-label="Costo"] { color: var(--suave); }
@@ -167,6 +167,7 @@ strong, .precio { font-variant-numeric: tabular-nums; }
   .menu nav button { flex: 1; flex-direction: column; gap: 2px; font-size: .72rem; padding: 7px 2px; text-align: center; }
   .contenido { padding: 16px 16px 92px; }
   .tarjetas { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .tarjetas > :last-child:nth-child(odd) { grid-column: 1 / -1; }
   .tarjeta { padding: 14px; }
   .tarjeta strong { font-size: 1.2rem; }
   .dos-columnas { grid-template-columns: 1fr; }
@@ -177,11 +178,16 @@ strong, .precio { font-variant-numeric: tabular-nums; }
   .pos-carrito.abierto { display: flex; position: fixed; inset: 0; z-index: 40; border-radius: 0; max-height: none; top: 0; }
   .ver-carrito:not([hidden]) { display: block; position: fixed; left: 16px; right: 16px; bottom: 78px; z-index: 30; padding: 15px; border-radius: 14px; border: 0; background: var(--marca); color: var(--sobre-marca); font-weight: 800; font-size: 1rem; box-shadow: 0 6px 18px rgba(32, 35, 43, .18); }
   .solo-movil { display: inline-block; }
-  .tabla-fila { grid-template-columns: 1fr auto; }
+  /* inventario en celular: foto y nombre a la izquierda, precio y disponibles a la derecha */
+  .tabla-fila { grid-template-columns: minmax(0, 1fr) auto; column-gap: 12px; row-gap: 2px; padding: 12px 0; }
   .tabla-fila.cabecera { display: none; }
+  .tabla-fila > .con-foto { grid-column: 1; grid-row: 1 / 3; }
   .tabla-fila > span[data-label] { display: none; }
-  .tabla-fila > span[data-label="Stock"] { display: block; }
-  .tabla-fila .acciones-fila { grid-column: 1 / -1; text-align: left; }
+  .tabla-fila > span[data-label="Precio"] { display: block; grid-column: 2; grid-row: 1; text-align: right; }
+  .tabla-fila > span[data-label="Stock"] { display: block; grid-column: 2; grid-row: 2; text-align: right; }
+  .tabla-fila .acciones-fila { grid-column: 1 / -1; grid-row: 3; text-align: left; margin-top: 4px; }
+  .tabla-fila .acciones-fila .btn { padding-left: 0; padding-right: 16px; }
+  .con-foto strong { display: block; line-height: 1.25; overflow-wrap: anywhere; }
   .titulo h1 { font-size: 1.3rem; }
 }
 
@@ -255,7 +261,6 @@ strong, .precio { font-variant-numeric: tabular-nums; }
 .ver-carrito strong { float: right; }
 
 /* inventario */
-.tabla-fila { grid-template-columns: 2.2fr 1fr 1fr 1.1fr 90px 130px; }
 .porcentaje { margin-left: 6px; font-size: .72rem; font-weight: 800; padding: 1px 6px; border-radius: 999px; background: var(--verde-suave); color: var(--verde); }
 
 /* gráfica de 7 días */

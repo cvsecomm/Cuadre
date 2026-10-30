@@ -3,14 +3,14 @@
   --fondo: #f6f7f9;
   --superficie: #ffffff;
   --borde: #e8eaee;
-  --texto: #20232b;
+  --texto: #1b2733;
   --suave: #737885;
   --menu: #ffffff;
   --menu-texto: #4a4f5c;
   --marca: #ffc629;
   --marca-oscura: #f2b600;
   --marca-suave: #fff6d6;
-  --sobre-marca: #20232b;
+  --sobre-marca: #1b2733;
   --verde: #12a150; --verde-suave: #e3f6ea;
   --rojo: #e5484d; --rojo-suave: #fdeaea;
   --azul: #2f6fed; --azul-suave: #e8f0fe;
@@ -19,8 +19,8 @@
   --rosa: #d6407f; --rosa-suave: #fde8f1;
   --sombra: 0 1px 3px rgba(32, 35, 43, .06);
   --radio: 12px;
-  --letra-titulo: 'Outfit', system-ui, sans-serif;
-  --letra: 'Nunito Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --letra-titulo: 'Nunito', system-ui, sans-serif;
+  --letra: 'Nunito', system-ui, -apple-system, 'Segoe UI', sans-serif;
   font-family: var(--letra);
   color: var(--texto);
   background: var(--fondo);
@@ -30,7 +30,7 @@
 body { margin: 0; background: var(--fondo); color: var(--texto); }
 button, input, select { font: inherit; color: inherit; }
 h1, h2, .marca, strong, .precio { font-family: var(--letra-titulo); }
-h1 { font-size: 1.6rem; margin: 0; font-weight: 700; text-wrap: balance; }
+h1 { font-size: 1.6rem; margin: 0; font-weight: 800; text-wrap: balance; }
 h2 { font-size: 1.05rem; margin: 0 0 12px; font-weight: 600; }
 small { color: var(--suave); display: block; font-size: .8rem; }
 .sub { color: var(--suave); margin: 2px 0 0; }
@@ -43,7 +43,7 @@ strong, .precio { font-variant-numeric: tabular-nums; }
 /* Estructura */
 .app { display: flex; min-height: 100vh; }
 .menu { width: 230px; background: var(--menu); color: var(--menu-texto); border-right: 1px solid var(--borde); padding: 22px 14px; position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; gap: 16px; }
-.marca { font-weight: 800; font-size: 1.6rem; color: var(--texto); padding: 0 8px; letter-spacing: -.02em; }
+.marca { font-weight: 900; font-size: 1.6rem; color: var(--texto); padding: 0 8px; letter-spacing: -.02em; }
 .marca::after { content: '.'; color: var(--marca-oscura); }
 .selector-negocio { padding: 10px 12px; border-radius: 10px; border: 1px solid var(--borde); background: var(--fondo); color: var(--texto); font-weight: 700; cursor: pointer; }
 .selector-negocio option { color: #1c2140; }
@@ -73,7 +73,7 @@ strong, .precio { font-variant-numeric: tabular-nums; }
 .fila.total strong { color: var(--texto); font-size: 1.5rem; }
 
 /* Controles */
-.btn { display: inline-block; padding: 10px 16px; border-radius: 12px; border: 1px solid var(--borde); background: var(--superficie); cursor: pointer; font-weight: 700; }
+.btn { display: inline-block; padding: 10px 18px; border-radius: 12px; border: 1px solid var(--borde); background: var(--superficie); cursor: pointer; font-weight: 700; }
 .btn:hover { border-color: var(--marca-oscura); }
 .btn.primario { background: var(--marca); border-color: var(--marca); color: var(--sobre-marca); }
 .btn.primario:hover { background: var(--marca-oscura); }
@@ -194,3 +194,6 @@ strong, .precio { font-variant-numeric: tabular-nums; }
   .recibo { position: absolute; top: 0; left: 0; width: 80mm; }
   .no-imprimir { display: none !important; }
 }
+
+.titulo .btn.primario { background: var(--texto); border-color: var(--texto); color: #fff; }
+.titulo .btn.primario:hover { background: #2c3a48; }

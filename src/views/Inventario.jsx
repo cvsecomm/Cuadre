@@ -24,7 +24,7 @@ export default function Inventario({ datos, negocio }) {
       </header>
 
       <section className="tarjetas">
-        <div className="tarjeta t-azul"><span>Productos</span><strong>{productos.length}</strong></div>
+        <div className="tarjeta t-azul"><span>Total de referencias</span><strong>{productos.length}</strong></div>
         <div className="tarjeta t-ambar"><span>Inventario a costo</span><strong>{pesos(valorCosto)}</strong></div>
         <div className="tarjeta t-verde"><span>Inventario a precio de venta</span><strong>{pesos(valorVenta)}</strong></div>
       </section>
@@ -33,7 +33,7 @@ export default function Inventario({ datos, negocio }) {
         <input className="campo" placeholder="Buscar producto…" value={buscar} onChange={(e) => setBuscar(e.target.value)} />
         <div className="tabla">
           <div className="tabla-fila cabecera">
-            <span>Producto</span><span>Precio</span><span>Costo</span><span>Stock</span><span></span>
+            <span>Producto</span><span>Precio</span><span>Costo</span><span>Ganancia</span><span>Disponible</span><span></span>
           </div>
           {visibles.map((p) => (
             <div className="tabla-fila" key={p.id}>
@@ -43,6 +43,10 @@ export default function Inventario({ datos, negocio }) {
               </span>
               <span data-label="Precio">{pesos(p.precio)}</span>
               <span data-label="Costo">{pesos(p.costo)}</span>
+              <span data-label="Ganancia">
+                {pesos(p.precio - p.costo)}
+                {p.precio > 0 && <span className="porcentaje">{Math.round(((p.precio - p.costo) / p.precio) * 100)}%</span>}
+              </span>
               <span data-label="Stock"><span className={'etiqueta' + (p.stock <= p.minimo ? ' alerta' : '')}>{p.stock}</span></span>
               <span className="acciones-fila">
                 <button className="btn enlace" onClick={() => setAjuste(p)}>Stock</button>

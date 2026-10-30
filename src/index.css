@@ -165,7 +165,6 @@ strong, .precio { font-variant-numeric: tabular-nums; }
   .menu nav { position: fixed; bottom: 0; left: 0; right: 0; flex-direction: row; background: var(--menu); border-top: 1px solid var(--borde); padding: 6px 6px calc(6px + env(safe-area-inset-bottom)); z-index: 20; }
   .menu nav button.activo { box-shadow: none; }
   .menu nav button { flex: 1; flex-direction: column; gap: 2px; font-size: .72rem; padding: 7px 2px; text-align: center; }
-  .selector-negocio { margin-left: auto; max-width: 55%; }
   .contenido { padding: 16px 16px 92px; }
   .tarjetas { grid-template-columns: 1fr 1fr; gap: 10px; }
   .tarjeta { padding: 14px; }
@@ -197,3 +196,82 @@ strong, .precio { font-variant-numeric: tabular-nums; }
 
 .titulo .btn.primario { background: var(--texto); border-color: var(--texto); color: #fff; }
 .titulo .btn.primario:hover { background: #2c3a48; }
+
+/* ---------- Estructura tipo punto de venta ---------- */
+.tarjeta-negocio { display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: 12px; background: var(--fondo); cursor: pointer; }
+.avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--texto); color: var(--marca); display: grid; place-items: center; flex-shrink: 0; }
+.negocio-texto { min-width: 0; flex: 1; }
+.tarjeta-negocio .selector-negocio { border: 0; background: none; padding: 0; width: 100%; font-weight: 800; }
+.menu nav button svg { flex-shrink: 0; }
+
+.barra-vender { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+.barra-vender h1 { font-size: 1.35rem; }
+.buscador { flex: 1; min-width: 180px; display: flex; align-items: center; gap: 8px; padding: 0 12px; border: 1px solid var(--borde); border-radius: 10px; background: var(--superficie); color: var(--suave); }
+.buscador input { border: 0; outline: none; padding: 10px 0; width: 100%; background: none; color: var(--texto); }
+.buscador:focus-within { border-color: var(--marca-oscura); }
+.btn.rojo-solido { background: var(--rojo); border-color: var(--rojo); color: #fff; }
+.btn.verde-solido { background: var(--verde); border-color: var(--verde); color: #fff; }
+.pestanas { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 12px; scrollbar-width: thin; }
+.pestanas button { flex-shrink: 0; padding: 6px 12px; border: 1px solid var(--borde); border-radius: 6px; background: var(--superficie); font-size: .85rem; font-weight: 600; cursor: pointer; }
+.pestanas button.activo { background: var(--marca); border-color: var(--marca); font-weight: 800; }
+
+/* tarjeta de producto: foto centrada, precio arriba, disponibilidad en píldora */
+.grilla { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+.producto { align-items: center; text-align: center; padding: 14px 10px 12px; gap: 4px; }
+.producto .img-producto { height: 84px; width: 84px; border-radius: 10px; margin-bottom: 6px; font-size: 1.6rem; }
+.producto img.img-producto { padding: 0; }
+.producto .precio { font-size: 1.05rem; font-weight: 800; }
+.producto .nombre { font-weight: 600; font-size: .85rem; color: var(--suave); line-height: 1.25; min-height: 2.5em; }
+.disponible { margin-top: 4px; font-size: .72rem; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: var(--verde-suave); color: var(--verde); }
+.disponible.bajo { background: var(--rojo-suave); color: var(--rojo); }
+
+.carrito-cabecera { gap: 8px; margin-bottom: 4px; }
+.carrito-cabecera h2 { margin: 0; flex: 1; }
+.btn.enlace.subrayado { color: var(--texto); text-decoration: underline; font-size: .85rem; }
+.carrito-vacio { display: grid; justify-items: center; gap: 4px; padding: 40px 10px; }
+.item { display: flex; flex-direction: column; align-items: stretch; gap: 8px; padding: 12px 0; }
+.item-fila { display: flex; align-items: center; gap: 10px; }
+.item-texto { flex: 1; min-width: 0; font-weight: 600; font-size: .92rem; }
+.icono-borrar { width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--rojo-suave); background: var(--superficie); color: var(--rojo); display: grid; place-items: center; cursor: pointer; }
+.cantidad { border: 1px solid var(--borde); border-radius: 10px; padding: 4px; }
+.cantidad button { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; }
+.cantidad span { min-width: 28px; text-align: center; }
+.subtotal { margin-left: auto; font-weight: 800; border: 1px solid var(--borde); border-radius: 10px; padding: 8px 12px; min-width: 110px; text-align: right; }
+.continuar { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 14px; border: 0; border-radius: 12px; background: var(--texto); color: #fff; font-weight: 800; font-size: 1rem; cursor: pointer; margin-top: 10px; }
+.continuar:disabled { opacity: .35; cursor: not-allowed; }
+.continuar span:nth-child(2) { flex: 1; text-align: left; }
+.cuenta { background: rgba(255,255,255,.15); border-radius: 6px; padding: 2px 8px; font-size: .85rem; }
+.total-pagar { text-align: center; padding: 18px; background: var(--marca-suave); border-radius: 12px; margin: 6px 0 14px; }
+.total-pagar strong { display: block; font-size: 2rem; }
+.metodos { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+.metodos button { padding: 12px 8px; border-radius: 10px; border: 1px solid var(--borde); background: var(--superficie); font-weight: 700; cursor: pointer; }
+.metodos button.activo { border-color: var(--marca-oscura); background: var(--marca-suave); box-shadow: 0 0 0 1px var(--marca-oscura); }
+.cambio { display: flex; justify-content: space-between; padding: 10px 12px; border-radius: 10px; background: var(--verde-suave); color: var(--verde); margin-bottom: 12px; font-weight: 700; }
+.cambio.falta { background: var(--rojo-suave); color: var(--rojo); }
+.exito { width: 52px; height: 52px; border-radius: 50%; background: var(--verde-suave); color: var(--verde); display: grid; place-items: center; font-size: 1.6rem; font-weight: 900; margin: 0 auto 8px; }
+.recibo h2 { text-align: center; margin-bottom: 2px; }
+.recibo > .sub { text-align: center; }
+.ver-carrito .cuenta { background: rgba(0,0,0,.12); margin-right: 6px; }
+.ver-carrito strong { float: right; }
+
+/* inventario */
+.tabla-fila { grid-template-columns: 2.2fr 1fr 1fr 1.1fr 90px 130px; }
+.porcentaje { margin-left: 6px; font-size: .72rem; font-weight: 800; padding: 1px 6px; border-radius: 999px; background: var(--verde-suave); color: var(--verde); }
+
+/* gráfica de 7 días */
+.grafica { display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; height: 200px; align-items: end; padding-top: 8px; }
+.barra-dia { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; gap: 6px; min-width: 0; }
+.barra-dia .barra { width: 100%; max-width: 56px; min-height: 3px; border-radius: 6px 6px 0 0; background: var(--verde-suave); }
+.barra-dia .barra.hoy { background: var(--verde); }
+.barra-dia .valor { font-size: .68rem; font-weight: 700; color: var(--suave); white-space: nowrap; }
+.barra-dia .dia { font-size: .78rem; color: var(--suave); text-transform: capitalize; }
+
+@media (max-width: 800px) {
+  .tarjeta-negocio { margin-left: auto; padding: 6px 10px; max-width: 60%; }
+  .tarjeta-negocio .avatar, .tarjeta-negocio small { display: none; }
+  .barra-vender h1 { display: none; }
+  .grilla { grid-template-columns: 1fr 1fr; }
+  .tabla-fila > span[data-label="Ganancia"] { display: none; }
+  .barra-dia .valor { display: none; }
+  .ver-carrito strong { float: none; margin-left: 6px; }
+}

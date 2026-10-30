@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { pesos, registrarGasto, borrarGasto, anularVenta, METODOS_PAGO, CATEGORIAS_GASTO } from '../store'
+import { pesos, borrarGasto, anularVenta } from '../store'
+import FormGasto from './FormGasto'
 
 const PERIODOS = { hoy: 'Hoy', semana: 'Últimos 7 días', mes: 'Este mes', todo: 'Todo' }
 
@@ -88,38 +89,5 @@ export default function Movimientos({ datos, negocio }) {
 
       {nuevoGasto && <FormGasto cerrar={() => setNuevoGasto(false)} />}
     </>
-  )
-}
-
-function FormGasto({ cerrar }) {
-  const [f, setF] = useState({ concepto: '', categoria: CATEGORIAS_GASTO[0], monto: '', metodo: METODOS_PAGO[0] })
-  const cambiar = (k) => (e) => setF({ ...f, [k]: e.target.value })
-  const enviar = (e) => {
-    e.preventDefault()
-    registrarGasto({ ...f, monto: Number(f.monto) })
-    cerrar()
-  }
-  return (
-    <div className="modal-fondo" onClick={cerrar}>
-      <form className="modal" onClick={(e) => e.stopPropagation()} onSubmit={enviar}>
-        <h2>Registrar gasto</h2>
-        <label className="etiqueta-campo">Concepto</label>
-        <input className="campo" required autoFocus placeholder="Ej: compra de pan" value={f.concepto} onChange={cambiar('concepto')} />
-        <label className="etiqueta-campo">Valor</label>
-        <input className="campo" required type="number" min="1" inputMode="numeric" value={f.monto} onChange={cambiar('monto')} />
-        <label className="etiqueta-campo">Categoría</label>
-        <select className="campo" value={f.categoria} onChange={cambiar('categoria')}>
-          {CATEGORIAS_GASTO.map((c) => <option key={c}>{c}</option>)}
-        </select>
-        <label className="etiqueta-campo">Pagado con</label>
-        <select className="campo" value={f.metodo} onChange={cambiar('metodo')}>
-          {METODOS_PAGO.map((m) => <option key={m}>{m}</option>)}
-        </select>
-        <div className="acciones">
-          <button type="button" className="btn" onClick={cerrar}>Cancelar</button>
-          <button className="btn primario">Guardar</button>
-        </div>
-      </form>
-    </div>
   )
 }

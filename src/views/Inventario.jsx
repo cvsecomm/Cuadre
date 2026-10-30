@@ -5,7 +5,7 @@ import { reducirImagen } from '../imagenes'
 
 const VACIO = { nombre: '', categoria: '', precio: '', costo: '', stock: '', minimo: 5 }
 
-export default function Inventario({ datos, negocio }) {
+export default function Inventario({ datos, negocio, esDueno }) {
   const productos = datos.productos.filter((p) => p.negocioId === negocio.id)
   const [buscar, setBuscar] = useState('')
   const [editando, setEditando] = useState(null)
@@ -20,7 +20,7 @@ export default function Inventario({ datos, negocio }) {
     <>
       <header className="titulo">
         <h1>Inventario</h1>
-        <button className="btn primario" onClick={() => setEditando(VACIO)}>Nuevo producto</button>
+        {esDueno && <button className="btn primario" onClick={() => setEditando(VACIO)}>Nuevo producto</button>}
       </header>
 
       <section className="tarjetas">
@@ -49,8 +49,8 @@ export default function Inventario({ datos, negocio }) {
               </span>
               <span data-label="Stock"><span className={'etiqueta' + (p.stock <= p.minimo ? ' alerta' : '')}>{p.stock}</span></span>
               <span className="acciones-fila">
-                <button className="btn enlace" onClick={() => setAjuste(p)}>Stock</button>
-                <button className="btn enlace" onClick={() => setEditando(p)}>Editar</button>
+                {esDueno && <button className="btn enlace" onClick={() => setAjuste(p)}>Stock</button>}
+                {esDueno && <button className="btn enlace" onClick={() => setEditando(p)}>Editar</button>}
               </span>
             </div>
           ))}
@@ -79,13 +79,15 @@ function FormProducto({ inicial, categorias, cerrar }) {
       setErrorFoto('No pudimos leer esa imagen. Prueba con una foto JPG o PNG.')
     }
   }
-  const enviar = (e) => {
+  const enviar = async (e) => {
     e.preventDefault()
-    guardarProducto({
+    try {
+      await guardarProducto({
       ...f, nombre: f.nombre.trim(), categoria: f.categoria.trim() || 'General',
-      precio: Number(f.precio), costo: Number(f.costo) || 0, stock: Number(f.stock) || 0, minimo: Number(f.minimo) || 0,
-    })
-    cerrar()
+        precio: Number(f.precio), costo: Number(f.costo) || 0, stock: Number(f.stock) || 0, minimo: Number(f.minimo) || 0,
+      })
+      cerrar()
+    } catch { /* el error se muestra arriba */ }
   }
   return (
     <div className="modal-fondo" onClick={cerrar}>
@@ -116,7 +118,7 @@ function FormProducto({ inicial, categorias, cerrar }) {
         </div>
         <div className="acciones">
           {inicial.id && (confirmarBorrado
-            ? <button type="button" className="btn peligro" onClick={() => { borrarProducto(inicial.id); cerrar() }}>Sí, borrar</button>
+            ? <button type="button" className="btn peligro" onClick={() => Promise.resolve(borrarProducto(inicial.id)).then(cerrar, () => {})}>Sí, borrar</button>
             : <button type="button" className="btn peligro" onClick={() => setConfirmarBorrado(true)}>Borrar</button>)}
           <button type="button" className="btn" onClick={cerrar}>Cancelar</button>
           <button className="btn primario">Guardar</button>
@@ -130,7 +132,7 @@ function FormAjuste({ producto, cerrar }) {
   const [cantidad, setCantidad] = useState('')
   const aplicar = (signo) => {
     const n = Number(cantidad)
-    if (n > 0) { ajustarStock(producto.id, signo * n); cerrar() }
+    if (n > 0) Promise.resolve(ajustarStock(producto.id, signo * n)).then(cerrar, () => {})
   }
   return (
     <div className="modal-fondo" onClick={cerrar}>

@@ -4,10 +4,9 @@ import { registrarGasto, METODOS_PAGO, CATEGORIAS_GASTO } from '../store'
 export default function FormGasto({ cerrar }) {
   const [f, setF] = useState({ concepto: '', categoria: CATEGORIAS_GASTO[0], monto: '', metodo: METODOS_PAGO[0] })
   const cambiar = (k) => (e) => setF({ ...f, [k]: e.target.value })
-  const enviar = (e) => {
+  const enviar = async (e) => {
     e.preventDefault()
-    registrarGasto({ ...f, monto: Number(f.monto) })
-    cerrar()
+    try { await registrarGasto({ ...f, monto: Number(f.monto) }); cerrar() } catch { /* el error se muestra arriba */ }
   }
   return (
     <div className="modal-fondo" onClick={cerrar}>

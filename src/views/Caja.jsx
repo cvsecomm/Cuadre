@@ -39,12 +39,21 @@ export default function Caja({ datos, negocio }) {
   })
   const quitar = (id) => setCarrito((c) => { const n = { ...c }; delete n[id]; return n })
 
-  const cobrar = () => {
-    const venta = registrarVenta({
+  const [cobrando, setCobrando] = useState(false)
+  const cobrar = async () => {
+    setCobrando(true)
+    let venta
+    try {
+      venta = await registrarVenta({
       items: items.map(({ producto: p, cantidad }) => ({ productoId: p.id, nombre: p.nombre, precio: p.precio, costo: p.costo, cantidad })),
-      metodo,
-      cliente,
-    })
+        metodo,
+        cliente,
+      })
+    } catch {
+      setCobrando(false) // el error se muestra arriba de la pantalla
+      return
+    }
+    setCobrando(false)
     setRecibo({ ...venta, recibido: Number(recibido) || 0 })
     setCarrito({}); setRecibido(''); setCliente(''); setVerCarrito(false); setPaso('productos')
   }
@@ -161,7 +170,7 @@ export default function Caja({ datos, negocio }) {
               <label className="etiqueta-campo" htmlFor="cliente">Cliente (opcional)</label>
               <input id="cliente" className="campo" value={cliente} onChange={(e) => setCliente(e.target.value)} />
             </div>
-            <button className="btn primario grande" onClick={cobrar}>Confirmar venta</button>
+            <button className="btn primario grande" onClick={cobrar} disabled={cobrando}>{cobrando ? 'Guardando…' : 'Confirmar venta'}</button>
           </>
         )}
       </aside>

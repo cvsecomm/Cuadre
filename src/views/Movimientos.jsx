@@ -12,7 +12,7 @@ function enPeriodo(iso, periodo) {
   return true
 }
 
-export default function Movimientos({ datos, negocio }) {
+export default function Movimientos({ datos, negocio, esDueno }) {
   const [periodo, setPeriodo] = useState('hoy')
   const [tipo, setTipo] = useState('todos')
   const [nuevoGasto, setNuevoGasto] = useState(false)
@@ -70,7 +70,7 @@ export default function Movimientos({ datos, negocio }) {
             <strong className={m.clase === 'venta' ? 'verde' : 'rojo'}>
               {m.clase === 'venta' ? '+' : '−'}{pesos(m.clase === 'venta' ? m.total : m.monto)}
             </strong>
-            {confirmando === m.id ? (
+            {!esDueno ? null : confirmando === m.id ? (
               <span className="confirmar">
                 <button className="btn enlace" onClick={() => setConfirmando(null)}>No</button>
                 <button

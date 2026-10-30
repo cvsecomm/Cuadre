@@ -1,22 +1,35 @@
 import { useState } from 'react'
-import { ShoppingBag, ArrowLeftRight, BarChart3, Package, Store } from 'lucide-react'
-import { useDatos, cambiarNegocio } from './store'
+import { ShoppingBag, ArrowLeftRight, BarChart3, Package, Store, LogOut } from 'lucide-react'
+import { useDatos, cambiarNegocio, cerrarSesion, MODO_NUBE } from './store'
 import Inicio from './views/Inicio'
 import Caja from './views/Caja'
 import Movimientos from './views/Movimientos'
 import Inventario from './views/Inventario'
+import Login from './views/Login'
+import FormNegocio from './views/FormNegocio'
 
+// soloDueno: el cajero no ve esa sección
 const VISTAS = [
   { id: 'vender', nombre: 'Vender', Icono: ShoppingBag, Componente: Caja },
   { id: 'movimientos', nombre: 'Movimientos', Icono: ArrowLeftRight, Componente: Movimientos },
-  { id: 'resumen', nombre: 'Resumen', Icono: BarChart3, Componente: Inicio },
+  { id: 'resumen', nombre: 'Resumen', Icono: BarChart3, Componente: Inicio, soloDueno: true },
   { id: 'inventario', nombre: 'Inventario', Icono: Package, Componente: Inventario },
 ]
+
+const NOMBRE_ROL = { dueno: 'Dueño', cajero: 'Cajero' }
 
 export default function App() {
   const datos = useDatos()
   const [vista, setVista] = useState('vender')
-  const { Componente } = VISTAS.find((v) => v.id === vista)
+  const [nuevoNegocio, setNuevoNegocio] = useState(false)
+
+  if (!datos.listo) return <div className="pantalla-centro"><p className="sub">Cargando…</p></div>
+  if (MODO_NUBE && !datos.usuario) return <Login />
+  if (datos.negocios.length === 0) return <FormNegocio />
+
+  const esDueno = datos.rol === 'dueno'
+  const vistas = VISTAS.filter((v) => esDueno || !v.soloDueno)
+  const { Componente } = vistas.find((v) => v.id === vista) ?? vistas[0]
   const negocio = datos.negocios.find((n) => n.id === datos.negocioActivo)
 
   return (
@@ -29,26 +42,35 @@ export default function App() {
             <select
               className="selector-negocio"
               value={datos.negocioActivo}
-              onChange={(e) => cambiarNegocio(e.target.value)}
+              onChange={(e) => (e.target.value === '+' ? setNuevoNegocio(true) : cambiarNegocio(e.target.value))}
               aria-label="Negocio"
             >
               {datos.negocios.map((n) => <option key={n.id} value={n.id}>{n.nombre}</option>)}
+              <option value="+">+ Agregar negocio</option>
             </select>
-            <small>Dueño</small>
+            <small>{NOMBRE_ROL[datos.rol]}</small>
           </span>
         </label>
         <nav>
-          {VISTAS.map((v) => (
+          {vistas.map((v) => (
             <button key={v.id} className={v.id === vista ? 'activo' : ''} onClick={() => setVista(v.id)}>
               <v.Icono size={19} strokeWidth={2} />
               <span>{v.nombre}</span>
             </button>
           ))}
         </nav>
+        {MODO_NUBE && (
+          <div className="menu-pie">
+            <small title={datos.usuario.email}>{datos.usuario.email}</small>
+            <button className="btn enlace" onClick={cerrarSesion}><LogOut size={16} /> Cerrar sesión</button>
+          </div>
+        )}
       </aside>
       <main className="contenido">
-        <Componente datos={datos} negocio={negocio} irA={setVista} />
+        {datos.error && <p className="aviso error">{datos.error}</p>}
+        {negocio && <Componente datos={datos} negocio={negocio} irA={setVista} esDueno={esDueno} />}
       </main>
+      {nuevoNegocio && <FormNegocio cerrar={() => setNuevoNegocio(false)} />}
     </div>
   )
 }

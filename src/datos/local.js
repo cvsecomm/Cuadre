@@ -81,7 +81,7 @@ export function ajustarStock(id, cantidad) {
 
 // ---------- Ventas ----------
 // items: [{ productoId, nombre, precio, costo, cantidad }]
-export function registrarVenta({ items, metodo, cliente, nota }) {
+export function registrarVenta({ items, metodo, cliente, clienteDoc, nota }) {
   const total = items.reduce((s, i) => s + i.precio * i.cantidad, 0)
   const costo = items.reduce((s, i) => s + i.costo * i.cantidad, 0)
   const ventasNegocio = estado.ventas.filter((v) => v.negocioId === estado.negocioActivo)
@@ -90,7 +90,7 @@ export function registrarVenta({ items, metodo, cliente, nota }) {
     numero: ventasNegocio.length + 1,
     negocioId: estado.negocioActivo,
     fecha: new Date().toISOString(),
-    items, total, costo, metodo, cliente: cliente || '', nota: nota || '',
+    items, total, costo, metodo, cliente: cliente || '', clienteDoc: clienteDoc || '', nota: nota || '',
   }
   const vendidos = Object.fromEntries(items.map((i) => [i.productoId, i.cantidad]))
   guardar({
@@ -131,4 +131,8 @@ export function borrarGasto(id) {
 export function crearNegocio({ nombre, tipo }) {
   const negocio = { id: uid(), nombre, tipo }
   guardar({ ...estado, negocios: [...estado.negocios, negocio], negocioActivo: negocio.id })
+}
+
+export function guardarNegocio(cambios) {
+  guardar({ ...estado, negocios: estado.negocios.map((n) => (n.id === estado.negocioActivo ? { ...n, ...cambios } : n)) })
 }

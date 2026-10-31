@@ -14,6 +14,7 @@ export default function Caja({ datos, negocio }) {
   const [metodo, setMetodo] = useState(METODOS_PAGO[0])
   const [recibido, setRecibido] = useState('')
   const [cliente, setCliente] = useState('')
+  const [clienteDoc, setClienteDoc] = useState('')
   const [recibo, setRecibo] = useState(null)
   const [verCarrito, setVerCarrito] = useState(false)
   const [nuevoGasto, setNuevoGasto] = useState(false)
@@ -48,6 +49,7 @@ export default function Caja({ datos, negocio }) {
       items: items.map(({ producto: p, cantidad }) => ({ productoId: p.id, nombre: p.nombre, precio: p.precio, costo: p.costo, cantidad })),
         metodo,
         cliente,
+        clienteDoc,
       })
     } catch {
       setCobrando(false) // el error se muestra arriba de la pantalla
@@ -55,7 +57,7 @@ export default function Caja({ datos, negocio }) {
     }
     setCobrando(false)
     setRecibo({ ...venta, recibido: Number(recibido) || 0 })
-    setCarrito({}); setRecibido(''); setCliente(''); setVerCarrito(false); setPaso('productos')
+    setCarrito({}); setRecibido(''); setCliente(''); setClienteDoc(''); setVerCarrito(false); setPaso('productos')
   }
 
   return (
@@ -169,6 +171,8 @@ export default function Caja({ datos, negocio }) {
               )}
               <label className="etiqueta-campo" htmlFor="cliente">Cliente (opcional)</label>
               <input id="cliente" className="campo" value={cliente} onChange={(e) => setCliente(e.target.value)} />
+              <label className="etiqueta-campo" htmlFor="cliente-doc">Cédula o NIT del cliente (opcional)</label>
+              <input id="cliente-doc" className="campo" inputMode="numeric" value={clienteDoc} onChange={(e) => setClienteDoc(e.target.value)} />
             </div>
             <button className="btn primario grande" onClick={cobrar} disabled={cobrando}>{cobrando ? 'Guardando…' : 'Confirmar venta'}</button>
           </>
@@ -180,10 +184,20 @@ export default function Caja({ datos, negocio }) {
       {recibo && (
         <div className="modal-fondo" onClick={() => setRecibo(null)}>
           <div className="modal recibo" onClick={(e) => e.stopPropagation()}>
-            <div className="exito">✓</div>
-            <h2>¡Venta registrada!</h2>
-            <p className="sub">{negocio.nombre} · Recibo #{recibo.numero} · {new Date(recibo.fecha).toLocaleString('es-CO')}</p>
-            {recibo.cliente && <p>Cliente: {recibo.cliente}</p>}
+            <div className="exito no-imprimir">✓</div>
+            <h2 className="no-imprimir">¡Venta registrada!</h2>
+            <div className="recibo-negocio">
+              <strong>{negocio.nombre}</strong>
+              {negocio.nit && <span>NIT {negocio.nit}</span>}
+              {negocio.direccion && <span>{negocio.direccion}</span>}
+              {negocio.telefono && <span>Tel. {negocio.telefono}</span>}
+              <span>Recibo #{recibo.numero} · {new Date(recibo.fecha).toLocaleString('es-CO')}</span>
+            </div>
+            {(recibo.cliente || recibo.clienteDoc) && (
+              <p className="recibo-cliente">
+                Cliente: {recibo.cliente || '—'}{recibo.clienteDoc && <> · C.C./NIT {recibo.clienteDoc}</>}
+              </p>
+            )}
             <hr />
             {recibo.items.map((i) => (
               <div className="fila" key={i.productoId}><span>{i.cantidad} × {i.nombre}</span><span>{pesos(i.precio * i.cantidad)}</span></div>

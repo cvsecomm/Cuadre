@@ -293,3 +293,12 @@ strong, .precio { font-variant-numeric: tabular-nums; }
 .menu-pie small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 8px; }
 .menu-pie .btn { display: flex; align-items: center; gap: 8px; color: var(--suave); }
 @media (max-width: 800px) { .menu-pie { display: none; } }
+
+/* encabezado del recibo */
+.recibo-negocio { display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center; font-size: .88rem; color: var(--suave); }
+.recibo-negocio strong { color: var(--texto); font-size: 1.05rem; }
+.recibo-negocio.muestra { border: 1px dashed var(--borde); border-radius: 12px; padding: 16px; }
+.recibo-cliente { text-align: center; font-size: .9rem; margin: 8px 0 0; }
+.nota { font-size: .82rem; margin-top: 12px; }
+.guardado { align-self: center; font-weight: 700; }
+@media print { .recibo .recibo-negocio strong { font-size: 1.1rem; } }

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ShoppingBag, ArrowLeftRight, BarChart3, Package, Store, LogOut } from 'lucide-react'
+import { ShoppingBag, ArrowLeftRight, BarChart3, Package, Store, LogOut, Settings } from 'lucide-react'
 import { useDatos, cambiarNegocio, cerrarSesion, MODO_NUBE } from './store'
 import Inicio from './views/Inicio'
 import Caja from './views/Caja'
@@ -7,6 +7,7 @@ import Movimientos from './views/Movimientos'
 import Inventario from './views/Inventario'
 import Login from './views/Login'
 import FormNegocio from './views/FormNegocio'
+import Negocio from './views/Negocio'
 
 // soloDueno: el cajero no ve esa sección
 const VISTAS = [
@@ -14,6 +15,7 @@ const VISTAS = [
   { id: 'movimientos', nombre: 'Movimientos', Icono: ArrowLeftRight, Componente: Movimientos },
   { id: 'resumen', nombre: 'Resumen', Icono: BarChart3, Componente: Inicio, soloDueno: true },
   { id: 'inventario', nombre: 'Inventario', Icono: Package, Componente: Inventario },
+  { id: 'negocio', nombre: 'Negocio', Icono: Settings, Componente: Negocio, soloDueno: true },
 ]
 
 const NOMBRE_ROL = { dueno: 'Dueño', cajero: 'Cajero' }
@@ -68,7 +70,7 @@ export default function App() {
       </aside>
       <main className="contenido">
         {datos.error && <p className="aviso error">{datos.error}</p>}
-        {negocio && <Componente datos={datos} negocio={negocio} irA={setVista} esDueno={esDueno} />}
+        {negocio && <Componente key={negocio.id} datos={datos} negocio={negocio} irA={setVista} esDueno={esDueno} />}
       </main>
       {nuevoNegocio && <FormNegocio cerrar={() => setNuevoNegocio(false)} />}
     </div>

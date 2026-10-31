@@ -17,6 +17,7 @@ export const anularVenta = (...a) => d.anularVenta(...a)
 export const registrarGasto = (...a) => d.registrarGasto(...a)
 export const borrarGasto = (...a) => d.borrarGasto(...a)
 export const crearNegocio = (...a) => d.crearNegocio(...a)
+export const guardarNegocio = (...a) => d.guardarNegocio(...a)
 export const iniciarSesion = (...a) => nube.iniciarSesion(...a)
 export const cerrarSesion = () => nube.cerrarSesion()
 

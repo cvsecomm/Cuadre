@@ -16,6 +16,9 @@ create table public.negocios (
   id uuid primary key default gen_random_uuid(),
   nombre text not null,
   tipo text not null default 'general',
+  nit text not null default '',
+  direccion text not null default '',
+  telefono text not null default '',
   creado_en timestamptz not null default now()
 );
 
@@ -50,6 +53,7 @@ create table public.ventas (
   costo numeric(14, 2) not null,
   metodo text not null,
   cliente text not null default '',
+  cliente_doc text not null default '',
   nota text not null default '',
   anulada boolean not null default false,
   vendedor_id uuid default auth.uid() references auth.users (id),
@@ -144,7 +148,8 @@ $$;
 -- Registra una venta y descuenta el stock. p_items: [{producto_id, cantidad}]
 -- Precio y costo se toman de la base de datos, no de lo que envía el navegador.
 create or replace function public.registrar_venta(
-  p_negocio uuid, p_items jsonb, p_metodo text, p_cliente text default '', p_nota text default ''
+  p_negocio uuid, p_items jsonb, p_metodo text, p_cliente text default '', p_nota text default '',
+  p_cliente_doc text default ''
 ) returns public.ventas language plpgsql security definer set search_path = '' as $$
 declare
   v_venta public.ventas;
@@ -159,8 +164,8 @@ begin
   perform pg_advisory_xact_lock(hashtext(p_negocio::text));
   select coalesce(max(numero), 0) + 1 into v_numero from public.ventas where negocio_id = p_negocio;
 
-  insert into public.ventas (negocio_id, numero, total, costo, metodo, cliente, nota)
-  values (p_negocio, v_numero, 0, 0, p_metodo, coalesce(p_cliente, ''), coalesce(p_nota, ''))
+  insert into public.ventas (negocio_id, numero, total, costo, metodo, cliente, cliente_doc, nota)
+  values (p_negocio, v_numero, 0, 0, p_metodo, coalesce(p_cliente, ''), coalesce(p_cliente_doc, ''), coalesce(p_nota, ''))
   returning * into v_venta;
 
   for v_item in select * from jsonb_array_elements(p_items) loop

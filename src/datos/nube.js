@@ -53,7 +53,7 @@ const num = (v) => Number(v ?? 0)
 async function recargar() {
   try {
     const { data: miembros, error: e1 } = await supabase
-      .from('miembros').select('rol, negocio:negocios(id, nombre, tipo)').eq('usuario_id', estado.usuario.id)
+      .from('miembros').select('rol, negocio:negocios(id, nombre, tipo, nit, direccion, telefono)').eq('usuario_id', estado.usuario.id)
     if (e1) throw e1
     const negocios = miembros.map((m) => ({ ...m.negocio, rol: m.rol }))
     let guardado = null
@@ -79,7 +79,7 @@ async function recargar() {
       })),
       ventas: vent.data.map((v) => ({
         id: v.id, negocioId: v.negocio_id, numero: v.numero, fecha: v.fecha, metodo: v.metodo,
-        cliente: v.cliente, nota: v.nota, total: num(v.total), costo: num(v.costo),
+        cliente: v.cliente, clienteDoc: v.cliente_doc || '', nota: v.nota, total: num(v.total), costo: num(v.costo),
         items: v.venta_items.map((i) => ({
           productoId: i.producto_id, nombre: i.nombre, precio: num(i.precio), costo: num(i.costo), cantidad: num(i.cantidad),
         })),
@@ -115,6 +115,10 @@ export function cambiarNegocio(id) {
   recargar()
 }
 
+export function guardarNegocio({ nombre, nit, direccion, telefono }) {
+  return cambio(() => supabase.from('negocios').update({ nombre, nit, direccion, telefono }).eq('id', estado.negocioActivo))
+}
+
 export async function crearNegocio({ nombre, tipo }) {
   const id = await cambio(() => supabase.rpc('crear_negocio', { p_nombre: nombre, p_tipo: tipo }))
   cambiarNegocio(id)
@@ -141,13 +145,13 @@ export function ajustarStock(id, cantidad) {
 }
 
 // ---------- Ventas ----------
-export async function registrarVenta({ items, metodo, cliente, nota }) {
+export async function registrarVenta({ items, metodo, cliente, clienteDoc, nota }) {
   const venta = await cambio(() => supabase.rpc('registrar_venta', {
     p_negocio: estado.negocioActivo,
     p_items: items.map((i) => ({ producto_id: i.productoId, cantidad: i.cantidad })),
-    p_metodo: metodo, p_cliente: cliente || '', p_nota: nota || '',
+    p_metodo: metodo, p_cliente: cliente || '', p_nota: nota || '', p_cliente_doc: clienteDoc || '',
   }))
-  return { ...venta, total: num(venta.total), costo: num(venta.costo), items }
+  return { ...venta, clienteDoc: venta.cliente_doc || '', total: num(venta.total), costo: num(venta.costo), items }
 }
 
 export function anularVenta(id) {

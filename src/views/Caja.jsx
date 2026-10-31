@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Search, Trash2, Minus, Plus, ChevronRight, ChevronLeft, Receipt } from 'lucide-react'
-import { pesos, registrarVenta, METODOS_PAGO } from '../store'
+import { pesos, registrarVenta, crearPedido, guardarPedido, borrarPedido, METODOS_PAGO } from '../store'
 import ImagenProducto from './Imagen'
 import FormGasto from './FormGasto'
 import FormVentaML from './FormVentaML'
@@ -17,7 +17,12 @@ export default function Caja({ datos, negocio }) {
   const categorias = ['Todos', ...new Set(productos.map((p) => p.categoria))]
   const [categoria, setCategoria] = useState('Todos')
   const [buscar, setBuscar] = useState('')
-  const [carrito, setCarrito] = useState({}) // productoId -> cantidad
+  // Pedidos abiertos (mesas o cuentas): cada uno guarda sus productos hasta que se cobra.
+  const pedidos = datos.pedidos.filter((p) => p.negocioId === negocio.id)
+  const [pedidoId, setPedidoId] = useState(null)
+  const pedido = pedidos.find((p) => p.id === pedidoId) ?? pedidos[0]
+  const carrito = Object.fromEntries((pedido?.items ?? []).map((i) => [i.productoId, i.cantidad])) // productoId -> cantidad
+  const [confirmarBorrar, setConfirmarBorrar] = useState(false)
   const [paso, setPaso] = useState('productos') // productos | pago
   const [metodo, setMetodo] = useState(METODOS_PAGO[0])
   const [recibido, setRecibido] = useState('')
@@ -53,14 +58,33 @@ export default function Caja({ datos, negocio }) {
   const unidades = items.reduce((s, i) => s + i.cantidad, 0)
   const cambio = Number(recibido) - total
 
-  const sumar = (id, n) => setCarrito((c) => {
-    const cantidad = (c[id] || 0) + n
-    const nuevo = { ...c }
+  const nombreNuevo = () => {
+    let n = pedidos.length + 1
+    while (pedidos.some((p) => p.nombre === `Pedido ${n}`)) n++
+    return `Pedido ${n}`
+  }
+  const nuevoPedido = () => {
+    setPedidoId(crearPedido(nombreNuevo()))
+    setPaso('productos'); setConfirmarBorrar(false)
+  }
+  const elegirPedido = (id) => { setPedidoId(id); setPaso('productos'); setConfirmarBorrar(false) }
+  const cambiarCarrito = (nuevo) => {
+    const items = Object.entries(nuevo).map(([productoId, cantidad]) => ({ productoId, cantidad }))
+    if (pedido) guardarPedido(pedido.id, { items })
+    else setPedidoId(crearPedido(nombreNuevo(), items))
+  }
+  const sumar = (id, n) => {
+    const cantidad = (carrito[id] || 0) + n
+    const nuevo = { ...carrito }
     if (cantidad <= 0) delete nuevo[id]
     else nuevo[id] = cantidad
-    return nuevo
-  })
-  const quitar = (id) => setCarrito((c) => { const n = { ...c }; delete n[id]; return n })
+    cambiarCarrito(nuevo)
+  }
+  const quitar = (id) => { const n = { ...carrito }; delete n[id]; cambiarCarrito(n) }
+  const eliminarPedido = () => {
+    if (pedido) borrarPedido(pedido.id)
+    setPedidoId(null); setConfirmarBorrar(false); setPaso('productos')
+  }
 
   const [cobrando, setCobrando] = useState(false)
   const cobrar = async () => {
@@ -79,7 +103,8 @@ export default function Caja({ datos, negocio }) {
     }
     setCobrando(false)
     setRecibo({ ...venta, recibido: Number(recibido) || 0 })
-    setCarrito({}); setRecibido(''); setCliente(''); setClienteDoc(''); setVerCarrito(false); setPaso('productos')
+    borrarPedido(pedido.id)
+    setPedidoId(null); setRecibido(''); setCliente(''); setClienteDoc(''); setVerCarrito(false); setPaso('productos')
   }
 
   return (
@@ -121,8 +146,8 @@ export default function Caja({ datos, negocio }) {
         </div>
       </section>
 
-      <button className="ver-carrito" onClick={() => setVerCarrito(true)} hidden={unidades === 0 || modoML}>
-        <span className="cuenta">{unidades}</span> Ver pedido <strong>{pesos(total)}</strong>
+      <button className="ver-carrito" onClick={() => setVerCarrito(true)} hidden={pedidos.length === 0 || modoML}>
+        <span className="cuenta">{unidades}</span> {pedidos.length > 1 ? `${pedido.nombre} · ${pedidos.length} abiertos` : 'Ver pedido'} <strong>{pesos(total)}</strong>
       </button>
 
       <aside className={'pos-carrito' + (verCarrito ? ' abierto' : '')}>
@@ -130,14 +155,30 @@ export default function Caja({ datos, negocio }) {
           <>
             <div className="carrito-cabecera">
               <button className="btn enlace solo-movil" onClick={() => setVerCarrito(false)}><ChevronLeft size={18} /></button>
-              <h2>Productos</h2>
-              {items.length > 0 && <button className="btn enlace subrayado" onClick={() => setCarrito({})}>Vaciar pedido</button>}
+              {pedido ? (
+                <input key={pedido.id} className="pedido-nombre" defaultValue={pedido.nombre} aria-label="Nombre del pedido"
+                  onBlur={(e) => { const v = e.target.value.trim(); if (v && v !== pedido.nombre) guardarPedido(pedido.id, { nombre: v }) }} />
+              ) : <h2>Productos</h2>}
+              {pedido && (confirmarBorrar ? (
+                <span className="confirmar-borrar">
+                  <button className="btn enlace" onClick={() => setConfirmarBorrar(false)}>No</button>
+                  <button className="btn enlace rojo" onClick={eliminarPedido}>Sí, eliminar</button>
+                </span>
+              ) : <button className="btn enlace subrayado" onClick={() => setConfirmarBorrar(true)}>Eliminar pedido</button>)}
+            </div>
+            <div className="pedidos-abiertos">
+              {pedidos.map((p) => (
+                <button key={p.id} className={'chip' + (p.id === pedido?.id ? ' activo' : '')} onClick={() => elegirPedido(p.id)}>
+                  {p.nombre} <small>{p.items.reduce((s, i) => s + i.cantidad, 0)}</small>
+                </button>
+              ))}
+              <button className="chip nuevo" onClick={nuevoPedido}><Plus size={14} /> Nuevo pedido</button>
             </div>
             <div className="carrito-items">
               {items.length === 0 && (
                 <div className="vacio carrito-vacio">
                   <Receipt size={36} strokeWidth={1.5} />
-                  <p>Toca un producto para agregarlo al pedido.</p>
+                  <p>{pedido ? 'Toca un producto para agregarlo a este pedido.' : 'Toca un producto para empezar un pedido.'}</p>
                 </div>
               )}
               {items.map(({ producto: p, cantidad }) => (

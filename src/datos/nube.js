@@ -12,7 +12,7 @@ const NEGOCIO_KEY = 'cuadre-negocio-activo'
 
 let estado = {
   modo: 'nube', listo: false, usuario: null, rol: null, error: '',
-  negocioActivo: null, negocios: [], productos: [], ventas: [], gastos: [],
+  negocioActivo: null, negocios: [], productos: [], ventas: [], gastos: [], pedidos: [],
 }
 const oyentes = new Set()
 function fijar(cambios) {
@@ -44,7 +44,7 @@ export async function iniciarSesion(email, clave) {
 
 export async function cerrarSesion() {
   await supabase.auth.signOut()
-  fijar({ usuario: null, negocios: [], productos: [], ventas: [], gastos: [], negocioActivo: null })
+  fijar({ usuario: null, negocios: [], productos: [], ventas: [], gastos: [], pedidos: [], negocioActivo: null })
 }
 
 // ---------- Lectura ----------
@@ -89,6 +89,7 @@ async function recargar() {
         categoria: g.categoria, monto: num(g.monto), metodo: g.metodo,
       })),
     })
+    await cargarPedidos()
   } catch (e) {
     fijar({ listo: true, error: 'No pudimos cargar tus datos. Revisa tu conexión a internet. (' + (e.message || e) + ')' })
   }
@@ -111,7 +112,7 @@ async function cambio(fn) {
 // ---------- Negocios ----------
 export function cambiarNegocio(id) {
   try { localStorage.setItem(NEGOCIO_KEY, id) } catch { /* sin acceso */ }
-  fijar({ negocioActivo: id, productos: [], ventas: [], gastos: [] })
+  fijar({ negocioActivo: id, productos: [], ventas: [], gastos: [], pedidos: [] })
   recargar()
 }
 
@@ -170,6 +171,52 @@ export async function registrarVenta({ items, metodo, cliente, clienteDoc, nota 
 
 export function anularVenta(id) {
   return cambio(() => supabase.rpc('anular_venta', { p_venta: id }))
+}
+
+// ---------- Pedidos abiertos ----------
+// Se ven en todos los equipos del negocio. Los cambios se muestran al instante y se guardan por detrás;
+// cada 10 segundos se traen los pedidos que hicieron otras personas.
+let escribiendo = 0
+
+async function cargarPedidos() {
+  if (!estado.negocioActivo || escribiendo) return
+  const negocio = estado.negocioActivo
+  const { data, error } = await supabase.from('pedidos').select('*').eq('negocio_id', negocio).order('creado_en')
+  if (error || escribiendo || negocio !== estado.negocioActivo) return // si la tabla no existe todavía, no se muestran
+  fijar({ pedidos: data.map((p) => ({ id: p.id, negocioId: p.negocio_id, nombre: p.nombre, items: p.items || [] })) })
+}
+
+if (supabase) {
+  setInterval(() => { if (estado.usuario && !document.hidden) cargarPedidos() }, 10000)
+}
+
+async function escribirPedido(fn) {
+  escribiendo++
+  const { error } = await fn()
+  escribiendo--
+  if (error) {
+    fijar({ error: 'No se pudo guardar el pedido: ' + error.message })
+    await cargarPedidos()
+    throw new Error(error.message)
+  }
+}
+
+export function crearPedido(nombre, items = []) {
+  const pedido = { id: crypto.randomUUID(), negocioId: estado.negocioActivo, nombre, items }
+  fijar({ pedidos: [...estado.pedidos, pedido] })
+  escribirPedido(() => supabase.from('pedidos').insert({ id: pedido.id, negocio_id: pedido.negocioId, nombre, items })).catch(() => {})
+  return pedido.id
+}
+
+export function guardarPedido(id, cambios) {
+  fijar({ pedidos: estado.pedidos.map((p) => (p.id === id ? { ...p, ...cambios } : p)) })
+  return escribirPedido(() => supabase.from('pedidos')
+    .update({ ...cambios, actualizado_en: new Date().toISOString() }).eq('id', id)).catch(() => {})
+}
+
+export function borrarPedido(id) {
+  fijar({ pedidos: estado.pedidos.filter((p) => p.id !== id) })
+  return escribirPedido(() => supabase.from('pedidos').delete().eq('id', id)).catch(() => {})
 }
 
 // ---------- Gastos ----------

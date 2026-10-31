@@ -38,7 +38,7 @@ function cargar() {
   return datosIniciales()
 }
 
-let estado = { ...cargar(), listo: true, modo: 'local', rol: 'dueno' }
+let estado = { pedidos: [], ...cargar(), listo: true, modo: 'local', rol: 'dueno' }
 const oyentes = new Set()
 
 function guardar(nuevo) {
@@ -77,6 +77,21 @@ export function ponerFotos(fotos) {
   })
   guardar({ ...estado, productos })
   return n
+}
+
+// ---------- Pedidos abiertos ----------
+export function crearPedido(nombre, items = []) {
+  const pedido = { id: uid(), negocioId: estado.negocioActivo, nombre, items }
+  guardar({ ...estado, pedidos: [...estado.pedidos, pedido] })
+  return pedido.id
+}
+
+export function guardarPedido(id, cambios) {
+  guardar({ ...estado, pedidos: estado.pedidos.map((p) => (p.id === id ? { ...p, ...cambios } : p)) })
+}
+
+export function borrarPedido(id) {
+  guardar({ ...estado, pedidos: estado.pedidos.filter((p) => p.id !== id) })
 }
 
 export function borrarProducto(id) {

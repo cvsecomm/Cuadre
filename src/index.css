@@ -315,3 +315,15 @@ strong, .precio { font-variant-numeric: tabular-nums; }
 .toast { position: fixed; left: 50%; bottom: 90px; transform: translateX(-50%); background: var(--texto); color: #fff; padding: 12px 18px; border-radius: 12px; font-weight: 700; z-index: 60; box-shadow: var(--sombra); width: max-content; max-width: calc(100% - 32px); text-align: center; }
 .titulo-acciones { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
 .btn.deshabilitado { opacity: .6; pointer-events: none; }
+
+/* ---------- Pedidos abiertos ---------- */
+.pedido-nombre { flex: 1; min-width: 0; font: inherit; font-size: 1.15rem; font-weight: 800; color: var(--texto); border: 1px solid transparent; border-radius: 8px; padding: 4px 6px; margin-left: -6px; background: transparent; }
+.pedido-nombre:hover { border-color: var(--borde); }
+.pedido-nombre:focus { outline: none; border-color: var(--marca); background: var(--superficie); }
+.pedidos-abiertos { display: flex; flex-wrap: wrap; gap: 6px; max-height: 128px; overflow-y: auto; padding: 8px 0 10px; margin-bottom: 4px; border-bottom: 1px solid var(--borde); scrollbar-width: thin; }
+.pedidos-abiertos .chip { flex: none; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.pedidos-abiertos .chip small { background: var(--fondo); border-radius: 999px; padding: 0 7px; font-weight: 800; }
+.pedidos-abiertos .chip.activo small { background: #fff; }
+.pedidos-abiertos .chip.nuevo { border-style: dashed; color: var(--suave); }
+.confirmar-borrar { display: inline-flex; gap: 10px; font-size: .85rem; }
+.btn.enlace.rojo { color: var(--rojo); font-weight: 800; }

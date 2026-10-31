@@ -135,6 +135,20 @@ export function guardarProducto(p) {
     : supabase.from('productos').insert({ ...fila, negocio_id: estado.negocioActivo }))
 }
 
+// Pone fotos a varios productos a la vez (fotos = { nombre: dataURL }). Solo a los que no tienen foto.
+export async function ponerFotos(fotos) {
+  const pendientes = estado.productos.filter((p) => p.negocioId === estado.negocioActivo && !p.imagen && fotos[p.nombre])
+  for (let i = 0; i < pendientes.length; i += 10) {
+    const lote = pendientes.slice(i, i + 10)
+    const respuestas = await Promise.all(lote.map((p) =>
+      supabase.from('productos').update({ imagen: fotos[p.nombre] }).eq('id', p.id)))
+    const fallo = respuestas.find((r) => r.error)
+    if (fallo) { fijar({ error: fallo.error.message }); await recargar(); throw new Error(fallo.error.message) }
+  }
+  await recargar()
+  return pendientes.length
+}
+
 // Se desactiva en vez de borrarse, para no perder el historial de ventas.
 export function borrarProducto(id) {
   return cambio(() => supabase.from('productos').update({ activo: false }).eq('id', id))

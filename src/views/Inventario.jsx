@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { pesos, guardarProducto, borrarProducto, ajustarStock } from '../store'
+import { pesos, guardarProducto, borrarProducto, ajustarStock, ponerFotos } from '../store'
 import ImagenProducto from './Imagen'
 import { reducirImagen } from '../imagenes'
 
@@ -16,12 +16,38 @@ export default function Inventario({ datos, negocio, esDueno }) {
   const valorVenta = productos.reduce((s, p) => s + p.precio * Math.max(p.stock, 0), 0)
   const categorias = [...new Set(productos.map((p) => p.categoria))]
 
+  // Archivo de fotos preparado aparte: { "NOMBRE DEL PRODUCTO": "data:image/jpeg;base64,..." }
+  const [importando, setImportando] = useState(false)
+  const [avisoFotos, setAvisoFotos] = useState('')
+  const importarFotos = async (e) => {
+    const archivo = e.target.files[0]
+    e.target.value = ''
+    if (!archivo) return
+    setImportando(true); setAvisoFotos('')
+    try {
+      const n = await ponerFotos(JSON.parse(await archivo.text()))
+      setAvisoFotos(n ? `Listo: ${n} productos quedaron con foto.` : 'No había productos sin foto que coincidan con el archivo.')
+    } catch {
+      setAvisoFotos('No se pudieron subir las fotos. Revisa que sea el archivo correcto.')
+    }
+    setImportando(false)
+  }
+
   return (
     <>
       <header className="titulo">
         <h1>Inventario</h1>
-        {esDueno && <button className="btn primario" onClick={() => setEditando(VACIO)}>Nuevo producto</button>}
+        {esDueno && (
+          <div className="titulo-acciones">
+            <label className={'btn' + (importando ? ' deshabilitado' : '')}>
+              {importando ? 'Subiendo fotos…' : 'Importar fotos'}
+              <input type="file" accept=".json,application/json" hidden disabled={importando} onChange={importarFotos} />
+            </label>
+            <button className="btn primario" onClick={() => setEditando(VACIO)}>Nuevo producto</button>
+          </div>
+        )}
       </header>
+      {avisoFotos && <p className="aviso">{avisoFotos}</p>}
 
       <section className="tarjetas">
         <div className="tarjeta t-azul"><span>Total de referencias</span><strong>{productos.length}</strong></div>

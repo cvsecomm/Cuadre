@@ -68,6 +68,17 @@ export function guardarProducto(prod) {
   guardar({ ...estado, productos })
 }
 
+export function ponerFotos(fotos) {
+  let n = 0
+  const productos = estado.productos.map((p) => {
+    if (p.negocioId !== estado.negocioActivo || p.imagen || !fotos[p.nombre]) return p
+    n++
+    return { ...p, imagen: fotos[p.nombre] }
+  })
+  guardar({ ...estado, productos })
+  return n
+}
+
 export function borrarProducto(id) {
   guardar({ ...estado, productos: estado.productos.filter((p) => p.id !== id) })
 }

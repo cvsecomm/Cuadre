@@ -10,6 +10,7 @@ const d = MODO_NUBE ? nube : local
 export const useDatos = () => d.useDatos()
 export const cambiarNegocio = (...a) => d.cambiarNegocio(...a)
 export const guardarProducto = (...a) => d.guardarProducto(...a)
+export const ponerFotos = (...a) => d.ponerFotos(...a)
 export const borrarProducto = (...a) => d.borrarProducto(...a)
 export const ajustarStock = (...a) => d.ajustarStock(...a)
 export const registrarVenta = (...a) => d.registrarVenta(...a)

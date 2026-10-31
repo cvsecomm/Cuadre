@@ -302,3 +302,14 @@ strong, .precio { font-variant-numeric: tabular-nums; }
 .nota { font-size: .82rem; margin-top: 12px; }
 .guardado { align-self: center; font-weight: 700; }
 @media print { .recibo .recibo-negocio strong { font-size: 1.1rem; } }
+
+/* ---------- Venta rápida Mercado Libre ---------- */
+.chip.modo-ml { white-space: nowrap; }
+.chip.modo-ml.activo { background: var(--marca); border-color: var(--marca); }
+.ml-aviso { margin: -4px 0 12px; }
+.ml-producto { display: flex; align-items: center; gap: 12px; padding: 10px 0 4px; }
+.ml-producto > div:nth-child(2) { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.ml-producto small { color: var(--suave); }
+.ml-ganancia { margin-top: 10px; color: var(--suave); }
+.ml-ganancia strong { color: var(--verde); }
+.toast { position: fixed; left: 50%; bottom: 90px; transform: translateX(-50%); background: var(--texto); color: #fff; padding: 12px 18px; border-radius: 12px; font-weight: 700; z-index: 60; box-shadow: var(--sombra); width: max-content; max-width: calc(100% - 32px); text-align: center; }

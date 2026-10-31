@@ -156,6 +156,7 @@ declare
   v_item jsonb;
   v_prod public.productos;
   v_cant numeric;
+  v_precio numeric;
   v_numero integer;
 begin
   if not public.es_miembro(p_negocio) then raise exception 'No tienes acceso a este negocio'; end if;
@@ -174,9 +175,12 @@ begin
       where id = (v_item ->> 'producto_id')::uuid and negocio_id = p_negocio for update;
     if not found then raise exception 'Producto no encontrado'; end if;
     if v_cant <= 0 then raise exception 'Cantidad inválida'; end if;
+    -- El precio puede venir en la venta (ej. Mercado Libre: lo que llegó); si no, el del producto.
+    v_precio := coalesce((v_item ->> 'precio')::numeric, v_prod.precio);
+    if v_precio < 0 then raise exception 'Precio inválido'; end if;
 
     insert into public.venta_items (venta_id, producto_id, nombre, precio, costo, cantidad)
-    values (v_venta.id, v_prod.id, v_prod.nombre, v_prod.precio, v_prod.costo, v_cant);
+    values (v_venta.id, v_prod.id, v_prod.nombre, v_precio, v_prod.costo, v_cant);
     update public.productos set stock = stock - v_cant where id = v_prod.id;
   end loop;
 

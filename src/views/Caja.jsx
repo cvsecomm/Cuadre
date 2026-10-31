@@ -3,6 +3,14 @@ import { Search, Trash2, Minus, Plus, ChevronRight, ChevronLeft, Receipt } from 
 import { pesos, registrarVenta, METODOS_PAGO } from '../store'
 import ImagenProducto from './Imagen'
 import FormGasto from './FormGasto'
+import FormVentaML from './FormVentaML'
+
+const leerModoML = (negocio) => {
+  try {
+    const v = localStorage.getItem('cuadre-ml-' + negocio.id)
+    return v === null ? negocio.tipo === 'ecommerce' : v === '1'
+  } catch { return negocio.tipo === 'ecommerce' }
+}
 
 export default function Caja({ datos, negocio }) {
   const productos = datos.productos.filter((p) => p.negocioId === negocio.id)
@@ -18,6 +26,20 @@ export default function Caja({ datos, negocio }) {
   const [recibo, setRecibo] = useState(null)
   const [verCarrito, setVerCarrito] = useState(false)
   const [nuevoGasto, setNuevoGasto] = useState(false)
+  const [modoML, setModoML] = useState(() => leerModoML(negocio))
+  const [ventaML, setVentaML] = useState(null) // producto que se está vendiendo por Mercado Libre
+  const [aviso, setAviso] = useState('')
+
+  const cambiarModoML = () => {
+    const nuevo = !modoML
+    setModoML(nuevo)
+    try { localStorage.setItem('cuadre-ml-' + negocio.id, nuevo ? '1' : '0') } catch { /* sin almacenamiento */ }
+  }
+  const terminarVentaML = (texto) => {
+    setVentaML(null)
+    setAviso(texto)
+    setTimeout(() => setAviso(''), 3000)
+  }
 
   const visibles = productos.filter((p) =>
     (categoria === 'Todos' || p.categoria === categoria) &&
@@ -69,8 +91,12 @@ export default function Caja({ datos, negocio }) {
             <Search size={17} />
             <input placeholder="Buscar productos" value={buscar} onChange={(e) => setBuscar(e.target.value)} />
           </label>
+          <button className={'chip modo-ml' + (modoML ? ' activo' : '')} onClick={cambiarModoML} aria-pressed={modoML}>
+            Mercado Libre {modoML ? 'activado' : ''}
+          </button>
           <button className="btn rojo-solido" onClick={() => setNuevoGasto(true)}>Nuevo gasto</button>
         </header>
+        {modoML && <p className="aviso ml-aviso">Modo Mercado Libre: toca un producto y escribe cuánto te llegó.</p>}
         <div className="pestanas">
           {categorias.map((c) => (
             <button key={c} className={c === categoria ? 'activo' : ''} onClick={() => setCategoria(c)}>{c}</button>
@@ -80,10 +106,10 @@ export default function Caja({ datos, negocio }) {
           {visibles.map((p) => {
             const agotado = p.stock <= 0
             return (
-              <button key={p.id} className={'producto' + (carrito[p.id] ? ' en-pedido' : '')} onClick={() => sumar(p.id, 1)} disabled={agotado}>
+              <button key={p.id} className={'producto' + (carrito[p.id] ? ' en-pedido' : '')} onClick={() => (modoML ? setVentaML(p) : sumar(p.id, 1))} disabled={agotado}>
                 {carrito[p.id] && <span className="contador">{carrito[p.id]}</span>}
                 <ImagenProducto producto={p} />
-                <span className="precio">{pesos(p.precio)}</span>
+                {!modoML && <span className="precio">{pesos(p.precio)}</span>}
                 <span className="nombre">{p.nombre}</span>
                 <span className={'disponible' + (p.stock <= p.minimo ? ' bajo' : '')}>
                   {agotado ? 'Agotado' : `${p.stock} disponibles`}
@@ -95,7 +121,7 @@ export default function Caja({ datos, negocio }) {
         </div>
       </section>
 
-      <button className="ver-carrito" onClick={() => setVerCarrito(true)} hidden={unidades === 0}>
+      <button className="ver-carrito" onClick={() => setVerCarrito(true)} hidden={unidades === 0 || modoML}>
         <span className="cuenta">{unidades}</span> Ver pedido <strong>{pesos(total)}</strong>
       </button>
 
@@ -180,6 +206,8 @@ export default function Caja({ datos, negocio }) {
       </aside>
 
       {nuevoGasto && <FormGasto cerrar={() => setNuevoGasto(false)} />}
+      {ventaML && <FormVentaML producto={ventaML} cerrar={() => setVentaML(null)} listo={terminarVentaML} />}
+      {aviso && <div className="toast">✓ {aviso}</div>}
 
       {recibo && (
         <div className="modal-fondo" onClick={() => setRecibo(null)}>

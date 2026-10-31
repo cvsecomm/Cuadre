@@ -148,7 +148,7 @@ export function ajustarStock(id, cantidad) {
 export async function registrarVenta({ items, metodo, cliente, clienteDoc, nota }) {
   const venta = await cambio(() => supabase.rpc('registrar_venta', {
     p_negocio: estado.negocioActivo,
-    p_items: items.map((i) => ({ producto_id: i.productoId, cantidad: i.cantidad })),
+    p_items: items.map((i) => ({ producto_id: i.productoId, cantidad: i.cantidad, precio: i.precio })),
     p_metodo: metodo, p_cliente: cliente || '', p_nota: nota || '', p_cliente_doc: clienteDoc || '',
   }))
   return { ...venta, clienteDoc: venta.cliente_doc || '', total: num(venta.total), costo: num(venta.costo), items }

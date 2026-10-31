@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Search, Trash2, Minus, Plus, ChevronRight, ChevronLeft, Receipt } from 'lucide-react'
+import { Search, Trash2, Minus, Plus, Pencil, ChevronRight, ChevronLeft, Receipt } from 'lucide-react'
 import { pesos, registrarVenta, crearPedido, guardarPedido, borrarPedido, METODOS_PAGO } from '../store'
 import ImagenProducto from './Imagen'
 import FormGasto from './FormGasto'
@@ -60,8 +60,8 @@ export default function Caja({ datos, negocio }) {
 
   const nombreNuevo = () => {
     let n = pedidos.length + 1
-    while (pedidos.some((p) => p.nombre === `Pedido ${n}`)) n++
-    return `Pedido ${n}`
+    while (pedidos.some((p) => p.nombre === `Mesa ${n}`)) n++
+    return `Mesa ${n}`
   }
   const nuevoPedido = () => {
     setPedidoId(crearPedido(nombreNuevo()))
@@ -156,8 +156,12 @@ export default function Caja({ datos, negocio }) {
             <div className="carrito-cabecera">
               <button className="btn enlace solo-movil" onClick={() => setVerCarrito(false)}><ChevronLeft size={18} /></button>
               {pedido ? (
-                <input key={pedido.id} className="pedido-nombre" defaultValue={pedido.nombre} aria-label="Nombre del pedido"
-                  onBlur={(e) => { const v = e.target.value.trim(); if (v && v !== pedido.nombre) guardarPedido(pedido.id, { nombre: v }) }} />
+                <label className="pedido-nombre-caja" title="Toca para cambiar el nombre">
+                  <input key={pedido.id} className="pedido-nombre" defaultValue={pedido.nombre} aria-label="Nombre del pedido"
+                    onKeyDown={(e) => { if (e.key === 'Enter') e.target.blur() }}
+                    onBlur={(e) => { const v = e.target.value.trim(); if (v && v !== pedido.nombre) guardarPedido(pedido.id, { nombre: v }) }} />
+                  <Pencil size={15} />
+                </label>
               ) : <h2>Productos</h2>}
               {pedido && (confirmarBorrar ? (
                 <span className="confirmar-borrar">
@@ -178,7 +182,7 @@ export default function Caja({ datos, negocio }) {
               {items.length === 0 && (
                 <div className="vacio carrito-vacio">
                   <Receipt size={36} strokeWidth={1.5} />
-                  <p>{pedido ? 'Toca un producto para agregarlo a este pedido.' : 'Toca un producto para empezar un pedido.'}</p>
+                  <p>{pedido ? 'Toca un producto para agregarlo. Para cambiar el nombre (Mesa 1, Domicilio…) toca el título.' : 'Toca un producto para empezar un pedido.'}</p>
                 </div>
               )}
               {items.map(({ producto: p, cantidad }) => (

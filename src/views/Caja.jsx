@@ -4,6 +4,7 @@ import { pesos, registrarVenta, crearPedido, guardarPedido, borrarPedido, METODO
 import ImagenProducto from './Imagen'
 import FormGasto from './FormGasto'
 import FormVentaML from './FormVentaML'
+import FormMitad from './FormMitad'
 
 const leerModoML = (negocio) => {
   try {
@@ -21,7 +22,15 @@ export default function Caja({ datos, negocio }) {
   const pedidos = datos.pedidos.filter((p) => p.negocioId === negocio.id)
   const [pedidoId, setPedidoId] = useState(null)
   const pedido = pedidos.find((p) => p.id === pedidoId) ?? pedidos[0]
-  const carrito = Object.fromEntries((pedido?.items ?? []).map((i) => [i.productoId, i.cantidad])) // productoId -> cantidad
+  const normales = (pedido?.items ?? []).filter((i) => !i.mitad)
+  const carrito = Object.fromEntries(normales.map((i) => [i.productoId, i.cantidad])) // productoId -> cantidad
+  // Pizzas mitad y mitad: { mitad: [idA, idB], cantidad }. Se cobra el precio del sabor más caro.
+  const mitades = (pedido?.items ?? []).filter((i) => i.mitad).map((m) => {
+    const a = productos.find((p) => p.id === m.mitad[0])
+    const b = productos.find((p) => p.id === m.mitad[1])
+    return a && b && { a, b, cantidad: m.cantidad, precio: Math.max(a.precio, b.precio) }
+  }).filter(Boolean)
+  const [elegirMitad, setElegirMitad] = useState(false)
   const [confirmarBorrar, setConfirmarBorrar] = useState(false)
   // Comanda para cocina: se dibuja solo mientras se imprime, para que no se mezcle con el recibo.
   const [comanda, setComanda] = useState(null)
@@ -61,8 +70,9 @@ export default function Caja({ datos, negocio }) {
     const producto = productos.find((x) => x.id === id)
     return producto && { producto, cantidad }
   }).filter(Boolean)
-  const total = items.reduce((s, i) => s + i.producto.precio * i.cantidad, 0)
-  const unidades = items.reduce((s, i) => s + i.cantidad, 0)
+  const total = items.reduce((s, i) => s + i.producto.precio * i.cantidad, 0) + mitades.reduce((s, m) => s + m.precio * m.cantidad, 0)
+  const unidades = items.reduce((s, i) => s + i.cantidad, 0) + mitades.reduce((s, m) => s + m.cantidad, 0)
+  const lineas = items.length + mitades.length
   const cambio = Number(recibido) - total
 
   const nombreNuevo = () => {
@@ -75,10 +85,23 @@ export default function Caja({ datos, negocio }) {
     setPaso('productos'); setConfirmarBorrar(false)
   }
   const elegirPedido = (id) => { setPedidoId(id); setPaso('productos'); setConfirmarBorrar(false) }
-  const cambiarCarrito = (nuevo) => {
-    const items = Object.entries(nuevo).map(([productoId, cantidad]) => ({ productoId, cantidad }))
+  const guardarItems = (items) => {
     if (pedido) guardarPedido(pedido.id, { items })
     else setPedidoId(crearPedido(nombreNuevo(), items))
+  }
+  const listaMitades = () => mitades.map((m) => ({ mitad: [m.a.id, m.b.id], cantidad: m.cantidad }))
+  const cambiarCarrito = (nuevo) => {
+    guardarItems([...Object.entries(nuevo).map(([productoId, cantidad]) => ({ productoId, cantidad })), ...listaMitades()])
+  }
+  const cambiarMitades = (lista) => guardarItems([...normales, ...lista.filter((m) => m.cantidad > 0)])
+  const sumarMitad = (i, n) => cambiarMitades(listaMitades().map((m, j) => (j === i ? { ...m, cantidad: m.cantidad + n } : m)))
+  const agregarMitad = (a, b) => {
+    const lista = listaMitades()
+    const igual = lista.findIndex((m) => (m.mitad[0] === a.id && m.mitad[1] === b.id) || (m.mitad[0] === b.id && m.mitad[1] === a.id))
+    if (igual >= 0) lista[igual] = { ...lista[igual], cantidad: lista[igual].cantidad + 1 }
+    else lista.push({ mitad: [a.id, b.id], cantidad: 1 })
+    cambiarMitades(lista)
+    setElegirMitad(false)
   }
   const sumar = (id, n) => {
     const cantidad = (carrito[id] || 0) + n
@@ -99,7 +122,13 @@ export default function Caja({ datos, negocio }) {
     let venta
     try {
       venta = await registrarVenta({
-      items: items.map(({ producto: p, cantidad }) => ({ productoId: p.id, nombre: p.nombre, precio: p.precio, costo: p.costo, cantidad })),
+        items: [
+          ...items.map(({ producto: p, cantidad }) => ({ productoId: p.id, nombre: p.nombre, precio: p.precio, costo: p.costo, cantidad })),
+          // Cada mitad descuenta media unidad de su sabor; entre las dos suman el precio del más caro.
+          ...mitades.flatMap((m) => [m.a, m.b].map((p) => ({
+            productoId: p.id, nombre: `½ ${p.nombre}`, precio: m.precio, costo: p.costo, cantidad: m.cantidad / 2,
+          }))),
+        ],
         metodo,
         cliente,
         clienteDoc,
@@ -126,6 +155,7 @@ export default function Caja({ datos, negocio }) {
           <button className={'chip modo-ml' + (modoML ? ' activo' : '')} onClick={cambiarModoML} aria-pressed={modoML}>
             Mercado Libre {modoML ? 'activado' : ''}
           </button>
+          {!modoML && <button className="chip mitad-boton" onClick={() => setElegirMitad(true)}>½ Mitad y mitad</button>}
           <button className="btn rojo-solido" onClick={() => setNuevoGasto(true)}>Nuevo gasto</button>
         </header>
         {modoML && <p className="aviso ml-aviso">Modo Mercado Libre: toca un producto y escribe cuánto te llegó.</p>}
@@ -186,7 +216,7 @@ export default function Caja({ datos, negocio }) {
               <button className="chip nuevo" onClick={nuevoPedido}><Plus size={14} /> Nuevo pedido</button>
             </div>
             <div className="carrito-items">
-              {items.length === 0 && (
+              {lineas === 0 && (
                 <div className="vacio carrito-vacio">
                   <Receipt size={36} strokeWidth={1.5} />
                   <p>{pedido ? 'Toca un producto para agregarlo. Para cambiar el nombre (Mesa 1, Domicilio…) toca el título.' : 'Toca un producto para empezar un pedido.'}</p>
@@ -212,13 +242,33 @@ export default function Caja({ datos, negocio }) {
                   </div>
                 </div>
               ))}
+              {mitades.map((m, i) => (
+                <div className="item" key={'mitad' + i}>
+                  <div className="item-fila">
+                    <span className="mini imagen-mitad">½</span>
+                    <div className="item-texto">
+                      <div>½ {m.a.nombre} + ½ {m.b.nombre}</div>
+                      <small>Mitad y mitad</small>
+                    </div>
+                    <button className="icono-borrar" onClick={() => sumarMitad(i, -m.cantidad)} aria-label="Quitar mitad y mitad"><Trash2 size={16} /></button>
+                  </div>
+                  <div className="item-fila">
+                    <div className="cantidad">
+                      <button onClick={() => sumarMitad(i, -1)} aria-label="Quitar uno"><Minus size={14} /></button>
+                      <span>{m.cantidad}</span>
+                      <button onClick={() => sumarMitad(i, 1)} aria-label="Agregar uno"><Plus size={14} /></button>
+                    </div>
+                    <span className="subtotal">{pesos(m.precio * m.cantidad)}</span>
+                  </div>
+                </div>
+              ))}
             </div>
-            {items.length > 0 && (
-              <button className="btn imprimir-comanda" onClick={() => setComanda({ nombre: pedido.nombre, fecha: new Date(), items })}>
+            {lineas > 0 && (
+              <button className="btn imprimir-comanda" onClick={() => setComanda({ nombre: pedido.nombre, fecha: new Date(), items, mitades })}>
                 <Printer size={17} /> Imprimir comanda
               </button>
             )}
-            <button className="continuar" disabled={items.length === 0} onClick={() => setPaso('pago')}>
+            <button className="continuar" disabled={lineas === 0} onClick={() => setPaso('pago')}>
               <span className="cuenta">{unidades}</span>
               <span>Continuar</span>
               <strong>{pesos(total)}</strong>
@@ -271,10 +321,17 @@ export default function Caja({ datos, negocio }) {
           {comanda.items.map(({ producto: p, cantidad }) => (
             <div className="comanda-item" key={p.id}><strong>{cantidad}</strong><span>{p.nombre}</span></div>
           ))}
+          {comanda.mitades.map((m, i) => (
+            <div className="comanda-item" key={'m' + i}><strong>{m.cantidad}</strong><span>½ {m.a.nombre} + ½ {m.b.nombre}</span></div>
+          ))}
           <hr />
         </div>
       )}
       {nuevoGasto && <FormGasto cerrar={() => setNuevoGasto(false)} />}
+      {elegirMitad && (
+        <FormMitad productos={categoria === 'Todos' ? productos : productos.filter((p) => p.categoria === categoria)}
+          cerrar={() => setElegirMitad(false)} agregar={agregarMitad} />
+      )}
       {ventaML && <FormVentaML producto={ventaML} cerrar={() => setVentaML(null)} listo={terminarVentaML} />}
       {aviso && <div className="toast">✓ {aviso}</div>}
 
@@ -296,8 +353,8 @@ export default function Caja({ datos, negocio }) {
               </p>
             )}
             <hr />
-            {recibo.items.map((i) => (
-              <div className="fila" key={i.productoId}><span>{i.cantidad} × {i.nombre}</span><span>{pesos(i.precio * i.cantidad)}</span></div>
+            {recibo.items.map((i, n) => (
+              <div className="fila" key={n}><span>{i.nombre.startsWith("½ ") ? i.cantidad * 2 : i.cantidad} × {i.nombre}</span><span>{pesos(i.precio * i.cantidad)}</span></div>
             ))}
             <hr />
             <div className="fila total"><span>Total</span><strong>{pesos(recibo.total)}</strong></div>

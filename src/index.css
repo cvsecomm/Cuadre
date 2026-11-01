@@ -353,3 +353,15 @@ strong, .precio { font-variant-numeric: tabular-nums; }
 .mitad-opcion:hover { border-color: var(--marca); }
 .mitad-opcion.elegida { border-color: var(--marca); background: var(--marca-suave); }
 .imagen-mitad { width: 44px; height: 44px; flex-shrink: 0; display: grid; place-items: center; background: var(--marca-suave); color: var(--texto); font-weight: 900; font-size: 1.2rem; border-radius: 10px; }
+/* ---------- Cierre de caja ---------- */
+.dos-columnas { align-items: start; }
+.cierre-form .fila { font-size: .95rem; color: var(--suave); }
+.cierre-form .fila.total { color: var(--texto); }
+.cierre-form .campo { margin-bottom: 8px; }
+.cierre-form .btn.grande { width: 100%; margin-top: 6px; }
+.cierres-lista { margin-top: 14px; }
+.cierre-fila { border-top: 1px solid var(--borde); flex-wrap: wrap; }
+.cierre-fila > div { display: flex; flex-direction: column; flex: 1; min-width: 160px; }
+.cierre-fila small { color: var(--suave); }
+.cierre-acciones { display: inline-flex; gap: 12px; }
+.recibo .acciones .btn { display: inline-flex; align-items: center; gap: 6px; }

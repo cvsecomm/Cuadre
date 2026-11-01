@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ShoppingBag, ArrowLeftRight, BarChart3, Package, Store, LogOut, Settings } from 'lucide-react'
+import { ShoppingBag, ArrowLeftRight, BarChart3, Package, Store, LogOut, Settings, Wallet } from 'lucide-react'
 import { useDatos, cambiarNegocio, cerrarSesion, MODO_NUBE } from './store'
 import Inicio from './views/Inicio'
 import Caja from './views/Caja'
@@ -8,11 +8,13 @@ import Inventario from './views/Inventario'
 import Login from './views/Login'
 import FormNegocio from './views/FormNegocio'
 import Negocio from './views/Negocio'
+import Cierre from './views/Cierre'
 
 // soloDueno: el cajero no ve esa sección
 const VISTAS = [
   { id: 'vender', nombre: 'Vender', Icono: ShoppingBag, Componente: Caja },
   { id: 'movimientos', nombre: 'Movimientos', Icono: ArrowLeftRight, Componente: Movimientos },
+  { id: 'cierre', nombre: 'Cierre', Icono: Wallet, Componente: Cierre },
   { id: 'resumen', nombre: 'Resumen', Icono: BarChart3, Componente: Inicio, soloDueno: true },
   { id: 'inventario', nombre: 'Inventario', Icono: Package, Componente: Inventario },
   { id: 'negocio', nombre: 'Negocio', Icono: Settings, Componente: Negocio, soloDueno: true },

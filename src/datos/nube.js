@@ -12,7 +12,7 @@ const NEGOCIO_KEY = 'cuadre-negocio-activo'
 
 let estado = {
   modo: 'nube', listo: false, usuario: null, rol: null, error: '',
-  negocioActivo: null, negocios: [], productos: [], ventas: [], gastos: [], pedidos: [],
+  negocioActivo: null, negocios: [], productos: [], ventas: [], gastos: [], pedidos: [], cierres: [],
 }
 const oyentes = new Set()
 function fijar(cambios) {
@@ -44,7 +44,7 @@ export async function iniciarSesion(email, clave) {
 
 export async function cerrarSesion() {
   await supabase.auth.signOut()
-  fijar({ usuario: null, negocios: [], productos: [], ventas: [], gastos: [], pedidos: [], negocioActivo: null })
+  fijar({ usuario: null, negocios: [], productos: [], ventas: [], gastos: [], pedidos: [], cierres: [], negocioActivo: null })
 }
 
 // ---------- Lectura ----------
@@ -89,7 +89,7 @@ async function recargar() {
         categoria: g.categoria, monto: num(g.monto), metodo: g.metodo,
       })),
     })
-    await cargarPedidos()
+    await Promise.all([cargarPedidos(), cargarCierres()])
   } catch (e) {
     fijar({ listo: true, error: 'No pudimos cargar tus datos. Revisa tu conexión a internet. (' + (e.message || e) + ')' })
   }
@@ -112,7 +112,7 @@ async function cambio(fn) {
 // ---------- Negocios ----------
 export function cambiarNegocio(id) {
   try { localStorage.setItem(NEGOCIO_KEY, id) } catch { /* sin acceso */ }
-  fijar({ negocioActivo: id, productos: [], ventas: [], gastos: [], pedidos: [] })
+  fijar({ negocioActivo: id, productos: [], ventas: [], gastos: [], pedidos: [], cierres: [] })
   recargar()
 }
 
@@ -217,6 +217,33 @@ export function guardarPedido(id, cambios) {
 export function borrarPedido(id) {
   fijar({ pedidos: estado.pedidos.filter((p) => p.id !== id) })
   return escribirPedido(() => supabase.from('pedidos').delete().eq('id', id)).catch(() => {})
+}
+
+// ---------- Cierres de caja ----------
+async function cargarCierres() {
+  const negocio = estado.negocioActivo
+  if (!negocio) return
+  const { data, error } = await supabase.from('cierres').select('*').eq('negocio_id', negocio)
+    .order('fecha', { ascending: false }).limit(60)
+  if (error || negocio !== estado.negocioActivo) return // si la tabla no existe todavía, no se muestran
+  fijar({
+    cierres: data.map((c) => ({
+      id: c.id, negocioId: c.negocio_id, fecha: c.fecha, desde: c.desde, base: num(c.base), ventas: num(c.ventas),
+      gastos: num(c.gastos), esperado: num(c.esperado), contado: num(c.contado), porMetodo: c.por_metodo || {},
+      numVentas: c.num_ventas, nota: c.nota,
+    })),
+  })
+}
+
+export function registrarCierre(c) {
+  return cambio(() => supabase.from('cierres').insert({
+    negocio_id: estado.negocioActivo, desde: c.desde, base: c.base, ventas: c.ventas, gastos: c.gastos,
+    esperado: c.esperado, contado: c.contado, por_metodo: c.porMetodo, num_ventas: c.numVentas, nota: c.nota,
+  }))
+}
+
+export function borrarCierre(id) {
+  return cambio(() => supabase.from('cierres').delete().eq('id', id))
 }
 
 // ---------- Gastos ----------

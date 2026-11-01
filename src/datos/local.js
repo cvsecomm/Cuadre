@@ -38,7 +38,7 @@ function cargar() {
   return datosIniciales()
 }
 
-let estado = { pedidos: [], ...cargar(), listo: true, modo: 'local', rol: 'dueno' }
+let estado = { pedidos: [], cierres: [], ...cargar(), listo: true, modo: 'local', rol: 'dueno' }
 const oyentes = new Set()
 
 function guardar(nuevo) {
@@ -77,6 +77,16 @@ export function ponerFotos(fotos) {
   })
   guardar({ ...estado, productos })
   return n
+}
+
+// ---------- Cierres de caja ----------
+export function registrarCierre(c) {
+  const cierre = { ...c, id: uid(), negocioId: estado.negocioActivo, fecha: new Date().toISOString() }
+  guardar({ ...estado, cierres: [cierre, ...estado.cierres] })
+}
+
+export function borrarCierre(id) {
+  guardar({ ...estado, cierres: estado.cierres.filter((c) => c.id !== id) })
 }
 
 // ---------- Pedidos abiertos ----------

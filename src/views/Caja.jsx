@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Search, Trash2, Minus, Plus, Pencil, ChevronRight, ChevronLeft, Receipt } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Search, Trash2, Minus, Plus, Pencil, Printer, ChevronRight, ChevronLeft, Receipt } from 'lucide-react'
 import { pesos, registrarVenta, crearPedido, guardarPedido, borrarPedido, METODOS_PAGO } from '../store'
 import ImagenProducto from './Imagen'
 import FormGasto from './FormGasto'
@@ -23,6 +23,13 @@ export default function Caja({ datos, negocio }) {
   const pedido = pedidos.find((p) => p.id === pedidoId) ?? pedidos[0]
   const carrito = Object.fromEntries((pedido?.items ?? []).map((i) => [i.productoId, i.cantidad])) // productoId -> cantidad
   const [confirmarBorrar, setConfirmarBorrar] = useState(false)
+  // Comanda para cocina: se dibuja solo mientras se imprime, para que no se mezcle con el recibo.
+  const [comanda, setComanda] = useState(null)
+  useEffect(() => {
+    if (!comanda) return
+    window.print()
+    setComanda(null)
+  }, [comanda])
   const [paso, setPaso] = useState('productos') // productos | pago
   const [metodo, setMetodo] = useState(METODOS_PAGO[0])
   const [recibido, setRecibido] = useState('')
@@ -206,6 +213,11 @@ export default function Caja({ datos, negocio }) {
                 </div>
               ))}
             </div>
+            {items.length > 0 && (
+              <button className="btn imprimir-comanda" onClick={() => setComanda({ nombre: pedido.nombre, fecha: new Date(), items })}>
+                <Printer size={17} /> Imprimir comanda
+              </button>
+            )}
             <button className="continuar" disabled={items.length === 0} onClick={() => setPaso('pago')}>
               <span className="cuenta">{unidades}</span>
               <span>Continuar</span>
@@ -250,6 +262,18 @@ export default function Caja({ datos, negocio }) {
         )}
       </aside>
 
+      {comanda && (
+        <div className="comanda">
+          <strong className="comanda-titulo">COMANDA</strong>
+          <div className="comanda-mesa">{comanda.nombre}</div>
+          <div className="comanda-fecha">{comanda.fecha.toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' })}</div>
+          <hr />
+          {comanda.items.map(({ producto: p, cantidad }) => (
+            <div className="comanda-item" key={p.id}><strong>{cantidad}</strong><span>{p.nombre}</span></div>
+          ))}
+          <hr />
+        </div>
+      )}
       {nuevoGasto && <FormGasto cerrar={() => setNuevoGasto(false)} />}
       {ventaML && <FormVentaML producto={ventaML} cerrar={() => setVentaML(null)} listo={terminarVentaML} />}
       {aviso && <div className="toast">✓ {aviso}</div>}

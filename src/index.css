@@ -329,3 +329,17 @@ strong, .precio { font-variant-numeric: tabular-nums; }
 .btn.enlace.rojo { color: var(--rojo); font-weight: 800; }
 .pedido-nombre-caja { flex: 1; min-width: 0; display: flex; align-items: center; gap: 4px; color: var(--suave); cursor: text; }
 .pedido-nombre-caja .pedido-nombre { flex: 1; border-color: var(--borde); border-style: dashed; }
+
+/* ---------- Comanda de cocina ---------- */
+.btn.imprimir-comanda { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; margin-bottom: 8px; font-weight: 800; }
+.comanda { display: none; }
+@media print {
+  .comanda, .comanda * { visibility: visible; }
+  .comanda { display: block; position: absolute; top: 0; left: 0; width: 80mm; padding: 4mm; color: #000; font-family: inherit; }
+  .comanda-titulo { display: block; text-align: center; font-size: 1rem; letter-spacing: .2em; }
+  .comanda-mesa { text-align: center; font-size: 1.8rem; font-weight: 900; margin: 4px 0; }
+  .comanda-fecha { text-align: center; font-size: .9rem; }
+  .comanda hr { border: 0; border-top: 2px dashed #000; margin: 8px 0; }
+  .comanda-item { display: flex; gap: 10px; font-size: 1.25rem; font-weight: 700; padding: 3px 0; }
+  .comanda-item strong { min-width: 2.2em; }
+}

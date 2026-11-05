@@ -18,21 +18,23 @@ export default function Movimientos({ datos, negocio, esDueno }) {
   const [tipo, setTipo] = useState('todos')
   const [nuevoGasto, setNuevoGasto] = useState(false)
   const [confirmando, setConfirmando] = useState(null)
-  // Calendario: muestra un día exacto (se trae de la base de datos, así sea de hace meses).
+  // Calendario: muestra un rango de fechas exacto (se trae de la base de datos, así sea de hace meses).
   const conCalendario = esCobertizo(negocio)
-  const [dia, setDia] = useState('') // 'aaaa-mm-dd'
+  const [dia, setDia] = useState('') // desde, 'aaaa-mm-dd'
+  const [hasta, setHasta] = useState('') // si está vacío, solo el día "desde"
   const [delDia, setDelDia] = useState(null) // { ventas, gastos } o null mientras carga
   const [errorDia, setErrorDia] = useState('')
   useEffect(() => {
     if (periodo !== 'fecha' || !dia) return
     let vigente = true
-    const [a, m, d] = dia.split('-').map(Number)
+    const fecha = (iso, extra = 0) => { const [a, m, d] = iso.split('-').map(Number); return new Date(a, m - 1, d + extra) }
+    const fin = hasta && hasta >= dia ? hasta : dia
     setDelDia(null); setErrorDia('')
-    movimientosEntre(new Date(a, m - 1, d), new Date(a, m - 1, d + 1))
+    movimientosEntre(fecha(dia), fecha(fin, 1))
       .then((r) => { if (vigente) setDelDia(r) })
       .catch(() => { if (vigente) setErrorDia('No se pudieron cargar los movimientos de ese día.') })
     return () => { vigente = false }
-  }, [periodo, dia, datos.ventas, datos.gastos])
+  }, [periodo, dia, hasta, datos.ventas, datos.gastos])
 
   const porFecha = periodo === 'fecha'
   const ventas = porFecha ? (delDia?.ventas ?? []) : datos.ventas.filter((v) => v.negocioId === negocio.id && enPeriodo(v.fecha, periodo))
@@ -57,14 +59,18 @@ export default function Movimientos({ datos, negocio, esDueno }) {
           <button key={k} className={'chip' + (k === periodo ? ' activo' : '')} onClick={() => setPeriodo(k)}>{n}</button>
         ))}
         {conCalendario && (
-          <label className={'chip chip-fecha' + (porFecha ? ' activo' : '')}>
+          <span className={'chip chip-fecha' + (porFecha ? ' activo' : '')}>
             <CalendarDays size={15} />
-            <input type="date" value={dia} max={new Date().toLocaleDateString('en-CA')} aria-label="Ver un día exacto"
+            <span>Del</span>
+            <input type="date" value={dia} aria-label="Desde"
               onChange={(e) => { setDia(e.target.value); if (e.target.value) setPeriodo('fecha') }} />
-          </label>
+            <span>al</span>
+            <input type="date" value={hasta} min={dia || undefined} aria-label="Hasta"
+              onChange={(e) => { setHasta(e.target.value); if (dia) setPeriodo('fecha') }} />
+          </span>
         )}
       </div>
-      {porFecha && dia && !delDia && !errorDia && <p className="sub">Cargando ese día…</p>}
+      {porFecha && dia && !delDia && !errorDia && <p className="sub">Cargando…</p>}
       {errorDia && <p className="aviso error">{errorDia}</p>}
 
       <section className="tarjetas">
@@ -82,7 +88,7 @@ export default function Movimientos({ datos, negocio, esDueno }) {
         {confirmando && lista.some((m) => m.id === confirmando && m.clase === 'venta') && (
           <p className="aviso">Al anular una venta, los productos vuelven al inventario.</p>
         )}
-        {lista.length === 0 && <p className="vacio">{porFecha && !dia ? 'Elige un día en el calendario.' : 'No hay movimientos en este periodo.'}</p>}
+        {lista.length === 0 && <p className="vacio">{porFecha && !dia ? 'Elige las fechas en el calendario.' : 'No hay movimientos en este periodo.'}</p>}
         {lista.map((m) => (
           <div className="movimiento" key={m.id}>
             <span className={'punto ' + m.clase} />

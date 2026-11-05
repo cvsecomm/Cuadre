@@ -367,7 +367,7 @@ strong, .precio { font-variant-numeric: tabular-nums; }
 .recibo .acciones .btn { display: inline-flex; align-items: center; gap: 6px; }
 
 /* ---------- El Cobertizo: calendario, consumo interno, nómina ---------- */
-.chip-fecha { display: inline-flex; align-items: center; gap: 6px; padding-top: 4px; padding-bottom: 4px; }
+.chip-fecha { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 6px; padding-top: 4px; padding-bottom: 4px; }
 .chip-fecha input { border: 0; background: transparent; font: inherit; color: inherit; cursor: pointer; }
 .dos-campos { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .nomina-empleado { border-top: 1px solid var(--borde); padding: 12px 0; }

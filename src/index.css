@@ -381,3 +381,4 @@ strong, .precio { font-variant-numeric: tabular-nums; }
 .receta-linea { display: grid; grid-template-columns: 1fr 90px auto auto; gap: 8px; align-items: center; margin-bottom: 8px; }
 .receta-linea .campo { margin: 0; }
 .receta-unidad { color: var(--suave); font-size: .9rem; min-width: 2.5em; }
+.compra-insumo { background: var(--marca-suave); border-radius: 12px; padding: 10px 12px; margin: 8px 0 6px; }

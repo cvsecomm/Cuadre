@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { CalendarDays } from 'lucide-react'
+import RangoFechas from './RangoFechas'
 import { pesos, borrarGasto, anularVenta, movimientosEntre, esCobertizo } from '../store'
 import FormGasto from './FormGasto'
 
@@ -59,15 +59,8 @@ export default function Movimientos({ datos, negocio, esDueno }) {
           <button key={k} className={'chip' + (k === periodo ? ' activo' : '')} onClick={() => setPeriodo(k)}>{n}</button>
         ))}
         {conCalendario && (
-          <span className={'chip chip-fecha' + (porFecha ? ' activo' : '')}>
-            <CalendarDays size={15} />
-            <span>Del</span>
-            <input type="date" value={dia} aria-label="Desde"
-              onChange={(e) => { setDia(e.target.value); if (e.target.value) setPeriodo('fecha') }} />
-            <span>al</span>
-            <input type="date" value={hasta} min={dia || undefined} aria-label="Hasta"
-              onChange={(e) => { setHasta(e.target.value); if (dia) setPeriodo('fecha') }} />
-          </span>
+          <RangoFechas desde={dia} hasta={hasta} activo={porFecha}
+            aplicar={(d, h) => { setDia(d); setHasta(h); setPeriodo('fecha') }} />
         )}
       </div>
       {porFecha && dia && !delDia && !errorDia && <p className="sub">Cargando…</p>}

@@ -367,8 +367,37 @@ strong, .precio { font-variant-numeric: tabular-nums; }
 .recibo .acciones .btn { display: inline-flex; align-items: center; gap: 6px; }
 
 /* ---------- El Cobertizo: calendario, consumo interno, nómina ---------- */
-.chip-fecha { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 6px; padding-top: 4px; padding-bottom: 4px; }
-.chip-fecha input { border: 0; background: transparent; font: inherit; color: inherit; cursor: pointer; }
+.chip-fecha { display: inline-flex; align-items: center; gap: 6px; }
+.rango { position: relative; display: inline-block; }
+.rango-fondo { position: fixed; inset: 0; z-index: 55; }
+.rango-panel { position: absolute; top: calc(100% + 8px); left: 0; z-index: 56; background: var(--superficie); border: 1px solid var(--borde); border-radius: 16px; box-shadow: 0 12px 32px rgba(27, 39, 51, .16); padding: 16px; width: max-content; }
+.rango-meses { display: flex; gap: 28px; }
+.rango-cabeza { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.rango-cabeza strong { font-size: 1rem; }
+.rango-flecha { border: 0; background: none; color: var(--suave); cursor: pointer; padding: 6px; border-radius: 8px; display: grid; place-items: center; }
+.rango-flecha:hover { background: var(--fondo); color: var(--texto); }
+.rango-flecha.oculta-escritorio { visibility: hidden; }
+.rango-grilla { display: grid; grid-template-columns: repeat(7, 42px); row-gap: 6px; }
+.rango-dia-semana { text-align: center; font-size: .8rem; color: var(--suave); font-weight: 600; padding-bottom: 4px; }
+.rango-dia { height: 36px; border: 0; background: none; font: inherit; font-weight: 600; color: var(--texto); cursor: pointer; }
+.rango-dia:hover { background: var(--fondo); border-radius: 8px; }
+.rango-dia.hoy { text-decoration: underline; text-underline-offset: 3px; }
+.rango-dia.en-rango { background: var(--marca-suave); border-radius: 0; }
+.rango-dia.en-rango.borde-izq { border-top-left-radius: 8px; border-bottom-left-radius: 8px; }
+.rango-dia.en-rango.borde-der { border-top-right-radius: 8px; border-bottom-right-radius: 8px; }
+.rango-dia.extremo { background: var(--marca); color: var(--sobre-marca); font-weight: 800; }
+.rango-dia.inicio { border-top-left-radius: 8px; border-bottom-left-radius: 8px; }
+.rango-dia.fin, .rango-dia.extremo:not(.en-rango) { border-top-right-radius: 8px; border-bottom-right-radius: 8px; }
+.rango-dia.extremo:not(.en-rango) { border-radius: 8px; }
+.rango-pie { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 14px; flex-wrap: wrap; }
+.rango-pie .acciones { margin: 0; }
+@media (max-width: 800px) {
+  .rango { position: static; }
+  .rango-panel { position: fixed; left: 16px; right: 16px; top: 80px; width: auto; }
+  .rango-mes.segundo { display: none; }
+  .rango-flecha.oculta-escritorio { visibility: visible; }
+  .rango-grilla { grid-template-columns: repeat(7, 1fr); }
+}
 .dos-campos { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .nomina-empleado { border-top: 1px solid var(--borde); padding: 12px 0; }
 .nomina-empleado:first-of-type { border-top: 0; }

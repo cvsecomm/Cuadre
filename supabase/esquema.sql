@@ -157,6 +157,7 @@ declare
   v_prod public.productos;
   v_cant numeric;
   v_precio numeric;
+  v_costo numeric;
   v_numero integer;
 begin
   if not public.es_miembro(p_negocio) then raise exception 'No tienes acceso a este negocio'; end if;
@@ -179,9 +180,19 @@ begin
     v_precio := coalesce((v_item ->> 'precio')::numeric, v_prod.precio);
     if v_precio < 0 then raise exception 'Precio inválido'; end if;
 
+    -- Si el producto tiene receta, se descuentan sus insumos y el costo sale de la receta.
+    if exists (select 1 from public.recetas r where r.producto_id = v_prod.id) then
+      select coalesce(sum(i.costo * r.cantidad), 0) into v_costo
+        from public.recetas r join public.productos i on i.id = r.insumo_id where r.producto_id = v_prod.id;
+      update public.productos i set stock = i.stock - v_cant * r.cantidad
+        from public.recetas r where r.producto_id = v_prod.id and i.id = r.insumo_id;
+    else
+      v_costo := v_prod.costo;
+      update public.productos set stock = stock - v_cant where id = v_prod.id;
+    end if;
+
     insert into public.venta_items (venta_id, producto_id, nombre, precio, costo, cantidad)
-    values (v_venta.id, v_prod.id, v_prod.nombre, v_precio, v_prod.costo, v_cant);
-    update public.productos set stock = stock - v_cant where id = v_prod.id;
+    values (v_venta.id, v_prod.id, v_prod.nombre, v_precio, v_costo, v_cant);
   end loop;
 
   update public.ventas set
@@ -200,8 +211,16 @@ begin
   select * into v_venta from public.ventas where id = p_venta for update;
   if not found or not public.es_dueno(v_venta.negocio_id) then raise exception 'Solo el dueño puede anular ventas'; end if;
   if v_venta.anulada then return; end if;
-  update public.productos p set stock = p.stock + i.cantidad
-    from public.venta_items i where i.venta_id = p_venta and i.producto_id = p.id;
+  -- Productos sin receta: vuelve su propio stock.
+  update public.productos p set stock = p.stock + x.cant
+    from (select producto_id, sum(cantidad) as cant from public.venta_items where venta_id = p_venta group by producto_id) x
+    where p.id = x.producto_id and not exists (select 1 from public.recetas r where r.producto_id = p.id);
+  -- Productos con receta: vuelven sus insumos.
+  update public.productos p set stock = p.stock + x.cant
+    from (select r.insumo_id, sum(i.cantidad * r.cantidad) as cant
+          from public.venta_items i join public.recetas r on r.producto_id = i.producto_id
+          where i.venta_id = p_venta group by r.insumo_id) x
+    where p.id = x.insumo_id;
   update public.ventas set anulada = true where id = p_venta;
 end;
 $$;
@@ -327,3 +346,25 @@ end;
 $$;
 revoke execute on function public.pagar_nomina from public, anon;
 grant execute on function public.pagar_nomina to authenticated;
+
+-- ---------- Insumos y recetas (cambio 006) ----------
+alter table public.productos
+  add column if not exists es_insumo boolean not null default false, -- insumo: no se vende, se gasta en recetas
+  add column if not exists unidad text not null default 'und';
+
+-- Receta: cuánto de cada insumo gasta un producto al venderse (ej. Hamburguesa = 1 pan + 1 carne).
+create table if not exists public.recetas (
+  negocio_id uuid not null references public.negocios (id) on delete cascade,
+  producto_id uuid not null references public.productos (id) on delete cascade,
+  insumo_id uuid not null references public.productos (id) on delete cascade,
+  cantidad numeric(12, 3) not null check (cantidad > 0),
+  primary key (producto_id, insumo_id)
+);
+create index if not exists recetas_negocio on public.recetas (negocio_id);
+alter table public.recetas enable row level security;
+drop policy if exists "ver recetas" on public.recetas;
+drop policy if exists "dueno maneja recetas" on public.recetas;
+create policy "ver recetas" on public.recetas for select using (public.es_miembro(negocio_id));
+create policy "dueno maneja recetas" on public.recetas for all
+  using (public.es_dueno(negocio_id)) with check (public.es_dueno(negocio_id));
+grant select, insert, update, delete on public.recetas to authenticated;

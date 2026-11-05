@@ -38,7 +38,7 @@ function cargar() {
   return datosIniciales()
 }
 
-let estado = { pedidos: [], cierres: [], empleados: [], turnos: [], ...cargar(), listo: true, modo: 'local', rol: 'dueno' }
+let estado = { pedidos: [], cierres: [], empleados: [], turnos: [], recetas: [], ...cargar(), listo: true, modo: 'local', rol: 'dueno' }
 const oyentes = new Set()
 
 function guardar(nuevo) {
@@ -151,6 +151,24 @@ export function ajustarStock(id, cantidad) {
 
 // ---------- Ventas ----------
 // items: [{ productoId, nombre, precio, costo, cantidad }]
+// Cuánto stock sale de cada producto: los que tienen receta gastan sus insumos.
+function movimientoStock(items) {
+  const m = {}
+  for (const i of items) {
+    const receta = estado.recetas.filter((r) => r.productoId === i.productoId)
+    if (receta.length === 0) m[i.productoId] = (m[i.productoId] || 0) + i.cantidad
+    for (const r of receta) m[r.insumoId] = (m[r.insumoId] || 0) + i.cantidad * r.cantidad
+  }
+  return m
+}
+
+export function guardarReceta(productoId, lineas) {
+  guardar({
+    ...estado,
+    recetas: [...estado.recetas.filter((r) => r.productoId !== productoId), ...lineas.map((l) => ({ ...l, productoId }))],
+  })
+}
+
 export function registrarVenta({ items, metodo, cliente, clienteDoc, nota }) {
   const total = items.reduce((s, i) => s + i.precio * i.cantidad, 0)
   const costo = items.reduce((s, i) => s + i.costo * i.cantidad, 0)
@@ -162,7 +180,7 @@ export function registrarVenta({ items, metodo, cliente, clienteDoc, nota }) {
     fecha: new Date().toISOString(),
     items, total, costo, metodo, cliente: cliente || '', clienteDoc: clienteDoc || '', nota: nota || '',
   }
-  const vendidos = Object.fromEntries(items.map((i) => [i.productoId, i.cantidad]))
+  const vendidos = movimientoStock(items)
   guardar({
     ...estado,
     ventas: [venta, ...estado.ventas],
@@ -175,7 +193,7 @@ export function registrarVenta({ items, metodo, cliente, clienteDoc, nota }) {
 export function anularVenta(id) {
   const venta = estado.ventas.find((v) => v.id === id)
   if (!venta) return
-  const devueltos = Object.fromEntries(venta.items.map((i) => [i.productoId, i.cantidad]))
+  const devueltos = movimientoStock(venta.items)
   guardar({
     ...estado,
     ventas: estado.ventas.filter((v) => v.id !== id),

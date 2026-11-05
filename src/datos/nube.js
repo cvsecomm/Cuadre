@@ -12,7 +12,7 @@ const NEGOCIO_KEY = 'cuadre-negocio-activo'
 
 let estado = {
   modo: 'nube', listo: false, usuario: null, rol: null, error: '',
-  negocioActivo: null, negocios: [], productos: [], ventas: [], gastos: [], pedidos: [], cierres: [], empleados: [], turnos: [],
+  negocioActivo: null, negocios: [], productos: [], ventas: [], gastos: [], pedidos: [], cierres: [], empleados: [], turnos: [], recetas: [],
 }
 const oyentes = new Set()
 function fijar(cambios) {
@@ -44,7 +44,7 @@ export async function iniciarSesion(email, clave) {
 
 export async function cerrarSesion() {
   await supabase.auth.signOut()
-  fijar({ usuario: null, negocios: [], productos: [], ventas: [], gastos: [], pedidos: [], cierres: [], empleados: [], turnos: [], negocioActivo: null })
+  fijar({ usuario: null, negocios: [], productos: [], ventas: [], gastos: [], pedidos: [], cierres: [], empleados: [], turnos: [], recetas: [], negocioActivo: null })
 }
 
 // ---------- Lectura ----------
@@ -100,11 +100,12 @@ async function recargar() {
       productos: prod.data.map((p) => ({
         id: p.id, negocioId: p.negocio_id, nombre: p.nombre, categoria: p.categoria, imagen: p.imagen || '',
         precio: num(p.precio), costo: num(p.costo), stock: num(p.stock), minimo: num(p.minimo),
+        esInsumo: Boolean(p.es_insumo), unidad: p.unidad || 'und',
       })),
       ventas: vent.data.map(aVenta),
       gastos: gast.data.map(aGasto),
     })
-    await Promise.all([cargarPedidos(), cargarCierres(), cargarNomina()])
+    await Promise.all([cargarPedidos(), cargarCierres(), cargarNomina(), cargarRecetas()])
   } catch (e) {
     fijar({ listo: true, error: 'No pudimos cargar tus datos. Revisa tu conexión a internet. (' + (e.message || e) + ')' })
   }
@@ -127,7 +128,7 @@ async function cambio(fn) {
 // ---------- Negocios ----------
 export function cambiarNegocio(id) {
   try { localStorage.setItem(NEGOCIO_KEY, id) } catch { /* sin acceso */ }
-  fijar({ negocioActivo: id, productos: [], ventas: [], gastos: [], pedidos: [], cierres: [], empleados: [], turnos: [] })
+  fijar({ negocioActivo: id, productos: [], ventas: [], gastos: [], pedidos: [], cierres: [], empleados: [], turnos: [], recetas: [] })
   recargar()
 }
 
@@ -145,6 +146,7 @@ export function guardarProducto(p) {
   const fila = {
     nombre: p.nombre, categoria: p.categoria, precio: p.precio, costo: p.costo,
     stock: p.stock, minimo: p.minimo, imagen: p.imagen || null,
+    ...(p.esInsumo !== undefined && { es_insumo: Boolean(p.esInsumo), unidad: p.unidad || 'und' }),
   }
   return cambio(() => p.id
     ? supabase.from('productos').update(fila).eq('id', p.id)
@@ -259,6 +261,25 @@ export function registrarCierre(c) {
 
 export function borrarCierre(id) {
   return cambio(() => supabase.from('cierres').delete().eq('id', id))
+}
+
+// ---------- Recetas (insumos que gasta cada producto) ----------
+async function cargarRecetas() {
+  const negocio = estado.negocioActivo
+  if (!negocio) return
+  const { data, error } = await supabase.from('recetas').select('*').eq('negocio_id', negocio)
+  if (error || negocio !== estado.negocioActivo) return // si la tabla no existe todavía, no se muestran
+  fijar({ recetas: data.map((r) => ({ productoId: r.producto_id, insumoId: r.insumo_id, cantidad: num(r.cantidad) })) })
+}
+
+// Reemplaza la receta de un producto. lineas = [{ insumoId, cantidad }]
+export async function guardarReceta(productoId, lineas) {
+  const { error } = await supabase.from('recetas').delete().eq('producto_id', productoId)
+  if (error) { fijar({ error: error.message }); throw new Error(error.message) }
+  if (lineas.length === 0) { await recargar(); return }
+  return cambio(() => supabase.from('recetas').insert(lineas.map((l) => ({
+    negocio_id: estado.negocioActivo, producto_id: productoId, insumo_id: l.insumoId, cantidad: l.cantidad,
+  }))))
 }
 
 // ---------- Nómina ----------

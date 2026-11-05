@@ -378,3 +378,6 @@ strong, .precio { font-variant-numeric: tabular-nums; }
 .nomina-cabeza small { color: var(--suave); }
 .casilla { display: flex; align-items: center; gap: 8px; margin: 10px 0; font-weight: 600; }
 .movimiento strong.suave { color: var(--suave); font-weight: 700; }
+.receta-linea { display: grid; grid-template-columns: 1fr 90px auto auto; gap: 8px; align-items: center; margin-bottom: 8px; }
+.receta-linea .campo { margin: 0; }
+.receta-unidad { color: var(--suave); font-size: .9rem; min-width: 2.5em; }

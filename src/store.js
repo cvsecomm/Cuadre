@@ -23,6 +23,7 @@ export const guardarEmpleado = (...a) => d.guardarEmpleado(...a)
 export const registrarTurno = (...a) => d.registrarTurno(...a)
 export const borrarTurno = (...a) => d.borrarTurno(...a)
 export const pagarNomina = (...a) => d.pagarNomina(...a)
+export const guardarReceta = (...a) => d.guardarReceta(...a)
 export const registrarVenta = (...a) => d.registrarVenta(...a)
 export const anularVenta = (...a) => d.anularVenta(...a)
 export const registrarGasto = (...a) => d.registrarGasto(...a)
@@ -43,3 +44,19 @@ export const CATEGORIAS_GASTO = ['Insumos', 'Mercancía', 'Arriendo', 'Servicios
 
 // Funciones que por ahora solo tiene el negocio El Cobertizo (calendario en Movimientos, consumos internos, nómina).
 export const esCobertizo = (negocio) => /cobertizo/i.test(negocio?.nombre || '')
+
+// Productos de un negocio con lo que dice su receta: si un producto tiene receta, lo disponible
+// sale de sus insumos (cuántos alcanzan) y el costo es la suma de lo que gasta.
+export function conRecetas(datos, negocioId) {
+  const productos = datos.productos.filter((p) => p.negocioId === negocioId)
+  return productos.map((p) => {
+    const receta = (datos.recetas || []).filter((r) => r.productoId === p.id)
+      .map((r) => ({ ...r, insumo: productos.find((x) => x.id === r.insumoId) })).filter((r) => r.insumo)
+    if (receta.length === 0) return p
+    return {
+      ...p, receta,
+      stock: Math.max(0, Math.floor(Math.min(...receta.map((r) => r.insumo.stock / r.cantidad)))),
+      costo: Math.round(receta.reduce((s, r) => s + r.insumo.costo * r.cantidad, 0)),
+    }
+  })
+}

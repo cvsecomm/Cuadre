@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Search, Trash2, Minus, Plus, Pencil, Printer, ChevronRight, ChevronLeft, Receipt } from 'lucide-react'
-import { pesos, registrarVenta, crearPedido, guardarPedido, borrarPedido, METODOS_PAGO, esCobertizo } from '../store'
+import { pesos, registrarVenta, crearPedido, guardarPedido, borrarPedido, METODOS_PAGO, esCobertizo, conRecetas } from '../store'
 
 const CONSUMO = 'Consumo interno'
 import ImagenProducto from './Imagen'
@@ -16,7 +16,8 @@ const leerModoML = (negocio) => {
 }
 
 export default function Caja({ datos, negocio }) {
-  const productos = datos.productos.filter((p) => p.negocioId === negocio.id)
+  // Los insumos (pan, carne…) no se venden: se gastan con las recetas.
+  const productos = conRecetas(datos, negocio.id).filter((p) => !p.esInsumo)
   const categorias = ['Todos', ...new Set(productos.map((p) => p.categoria))]
   const [categoria, setCategoria] = useState('Todos')
   const [buscar, setBuscar] = useState('')

@@ -18,6 +18,11 @@ export const guardarPedido = (...a) => d.guardarPedido(...a)
 export const borrarPedido = (...a) => d.borrarPedido(...a)
 export const registrarCierre = (...a) => d.registrarCierre(...a)
 export const borrarCierre = (...a) => d.borrarCierre(...a)
+export const movimientosEntre = (...a) => d.movimientosEntre(...a)
+export const guardarEmpleado = (...a) => d.guardarEmpleado(...a)
+export const registrarTurno = (...a) => d.registrarTurno(...a)
+export const borrarTurno = (...a) => d.borrarTurno(...a)
+export const pagarNomina = (...a) => d.pagarNomina(...a)
 export const registrarVenta = (...a) => d.registrarVenta(...a)
 export const anularVenta = (...a) => d.anularVenta(...a)
 export const registrarGasto = (...a) => d.registrarGasto(...a)
@@ -35,3 +40,6 @@ export const esHoy = (iso) => new Date(iso).toDateString() === new Date().toDate
 
 export const METODOS_PAGO = ['Efectivo', 'Transferencia', 'Tarjeta', 'Nequi / Daviplata']
 export const CATEGORIAS_GASTO = ['Insumos', 'Mercancía', 'Arriendo', 'Servicios', 'Nómina', 'Publicidad', 'Envíos', 'Otros']
+
+// Funciones que por ahora solo tiene el negocio El Cobertizo (calendario en Movimientos, consumos internos, nómina).
+export const esCobertizo = (negocio) => /cobertizo/i.test(negocio?.nombre || '')

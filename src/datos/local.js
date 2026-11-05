@@ -38,7 +38,7 @@ function cargar() {
   return datosIniciales()
 }
 
-let estado = { pedidos: [], cierres: [], ...cargar(), listo: true, modo: 'local', rol: 'dueno' }
+let estado = { pedidos: [], cierres: [], empleados: [], turnos: [], ...cargar(), listo: true, modo: 'local', rol: 'dueno' }
 const oyentes = new Set()
 
 function guardar(nuevo) {
@@ -77,6 +77,40 @@ export function ponerFotos(fotos) {
   })
   guardar({ ...estado, productos })
   return n
+}
+
+export async function movimientosEntre(desde, hasta) {
+  const dentro = (x) => x.negocioId === estado.negocioActivo && new Date(x.fecha) >= desde && new Date(x.fecha) < hasta
+  return { ventas: estado.ventas.filter(dentro), gastos: estado.gastos.filter(dentro) }
+}
+
+// ---------- Nómina ----------
+export function guardarEmpleado(e) {
+  const empleados = e.id
+    ? estado.empleados.map((x) => (x.id === e.id ? { ...x, ...e } : x))
+    : [...estado.empleados, { ...e, id: uid(), negocioId: estado.negocioActivo }]
+  guardar({ ...estado, empleados })
+}
+
+export function registrarTurno(t) {
+  guardar({ ...estado, turnos: [{ ...t, id: uid(), negocioId: estado.negocioActivo, pagado: false }, ...estado.turnos] })
+}
+
+export function borrarTurno(id) {
+  guardar({ ...estado, turnos: estado.turnos.filter((t) => t.id !== id) })
+}
+
+export function pagarNomina(empleadoId, turnoIds, metodo) {
+  const emp = estado.empleados.find((e) => e.id === empleadoId)
+  const pendientes = estado.turnos.filter((t) => turnoIds.includes(t.id) && t.empleadoId === empleadoId && !t.pagado)
+  const monto = pendientes.reduce((s, t) => s + t.horas * t.valorHora, 0)
+  if (monto <= 0) return
+  const gasto = { id: uid(), negocioId: estado.negocioActivo, fecha: new Date().toISOString(), concepto: `Nómina ${emp.nombre}`, categoria: 'Nómina', monto, metodo }
+  guardar({
+    ...estado,
+    gastos: [gasto, ...estado.gastos],
+    turnos: estado.turnos.map((t) => (pendientes.includes(t) ? { ...t, pagado: true } : t)),
+  })
 }
 
 // ---------- Cierres de caja ----------

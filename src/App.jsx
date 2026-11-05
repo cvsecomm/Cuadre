@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { ShoppingBag, ArrowLeftRight, BarChart3, Package, Store, LogOut, Settings, Wallet } from 'lucide-react'
-import { useDatos, cambiarNegocio, cerrarSesion, MODO_NUBE } from './store'
+import { ShoppingBag, ArrowLeftRight, BarChart3, Package, Store, LogOut, Settings, Wallet, Users } from 'lucide-react'
+import { useDatos, cambiarNegocio, cerrarSesion, MODO_NUBE, esCobertizo } from './store'
 import Inicio from './views/Inicio'
 import Caja from './views/Caja'
 import Movimientos from './views/Movimientos'
@@ -9,13 +9,15 @@ import Login from './views/Login'
 import FormNegocio from './views/FormNegocio'
 import Negocio from './views/Negocio'
 import Cierre from './views/Cierre'
+import Nomina from './views/Nomina'
 
-// soloDueno: el cajero no ve esa sección
+// soloDueno: el cajero no ve esa sección. soloCobertizo: solo aparece en el negocio El Cobertizo
 const VISTAS = [
   { id: 'vender', nombre: 'Vender', Icono: ShoppingBag, Componente: Caja },
   { id: 'movimientos', nombre: 'Movimientos', Icono: ArrowLeftRight, Componente: Movimientos },
   { id: 'cierre', nombre: 'Cierre', Icono: Wallet, Componente: Cierre },
   { id: 'resumen', nombre: 'Resumen', Icono: BarChart3, Componente: Inicio, soloDueno: true },
+  { id: 'nomina', nombre: 'Nómina', Icono: Users, Componente: Nomina, soloDueno: true, soloCobertizo: true },
   { id: 'inventario', nombre: 'Inventario', Icono: Package, Componente: Inventario },
   { id: 'negocio', nombre: 'Negocio', Icono: Settings, Componente: Negocio, soloDueno: true },
 ]
@@ -32,9 +34,9 @@ export default function App() {
   if (datos.negocios.length === 0) return <FormNegocio />
 
   const esDueno = datos.rol === 'dueno'
-  const vistas = VISTAS.filter((v) => esDueno || !v.soloDueno)
-  const { Componente } = vistas.find((v) => v.id === vista) ?? vistas[0]
   const negocio = datos.negocios.find((n) => n.id === datos.negocioActivo)
+  const vistas = VISTAS.filter((v) => (esDueno || !v.soloDueno) && (!v.soloCobertizo || esCobertizo(negocio)))
+  const { Componente } = vistas.find((v) => v.id === vista) ?? vistas[0]
 
   return (
     <div className="app">

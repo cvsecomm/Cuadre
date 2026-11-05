@@ -365,3 +365,16 @@ strong, .precio { font-variant-numeric: tabular-nums; }
 .cierre-fila small { color: var(--suave); }
 .cierre-acciones { display: inline-flex; gap: 12px; }
 .recibo .acciones .btn { display: inline-flex; align-items: center; gap: 6px; }
+
+/* ---------- El Cobertizo: calendario, consumo interno, nómina ---------- */
+.chip-fecha { display: inline-flex; align-items: center; gap: 6px; padding-top: 4px; padding-bottom: 4px; }
+.chip-fecha input { border: 0; background: transparent; font: inherit; color: inherit; cursor: pointer; }
+.dos-campos { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.nomina-empleado { border-top: 1px solid var(--borde); padding: 12px 0; }
+.nomina-empleado:first-of-type { border-top: 0; }
+.nomina-empleado > .btn { width: 100%; margin-top: 6px; font-weight: 800; }
+.nomina-cabeza { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+.nomina-cabeza > div { display: flex; flex-direction: column; }
+.nomina-cabeza small { color: var(--suave); }
+.casilla { display: flex; align-items: center; gap: 8px; margin: 10px 0; font-weight: 600; }
+.movimiento strong.suave { color: var(--suave); font-weight: 700; }

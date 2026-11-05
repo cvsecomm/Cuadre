@@ -1,5 +1,6 @@
-import { useState } from 'react'
-import { pesos, borrarGasto, anularVenta } from '../store'
+import { useEffect, useState } from 'react'
+import { CalendarDays } from 'lucide-react'
+import { pesos, borrarGasto, anularVenta, movimientosEntre, esCobertizo } from '../store'
 import FormGasto from './FormGasto'
 
 const PERIODOS = { hoy: 'Hoy', semana: 'Últimos 7 días', mes: 'Este mes', todo: 'Todo' }
@@ -17,9 +18,25 @@ export default function Movimientos({ datos, negocio, esDueno }) {
   const [tipo, setTipo] = useState('todos')
   const [nuevoGasto, setNuevoGasto] = useState(false)
   const [confirmando, setConfirmando] = useState(null)
+  // Calendario: muestra un día exacto (se trae de la base de datos, así sea de hace meses).
+  const conCalendario = esCobertizo(negocio)
+  const [dia, setDia] = useState('') // 'aaaa-mm-dd'
+  const [delDia, setDelDia] = useState(null) // { ventas, gastos } o null mientras carga
+  const [errorDia, setErrorDia] = useState('')
+  useEffect(() => {
+    if (periodo !== 'fecha' || !dia) return
+    let vigente = true
+    const [a, m, d] = dia.split('-').map(Number)
+    setDelDia(null); setErrorDia('')
+    movimientosEntre(new Date(a, m - 1, d), new Date(a, m - 1, d + 1))
+      .then((r) => { if (vigente) setDelDia(r) })
+      .catch(() => { if (vigente) setErrorDia('No se pudieron cargar los movimientos de ese día.') })
+    return () => { vigente = false }
+  }, [periodo, dia, datos.ventas, datos.gastos])
 
-  const ventas = datos.ventas.filter((v) => v.negocioId === negocio.id && enPeriodo(v.fecha, periodo))
-  const gastos = datos.gastos.filter((g) => g.negocioId === negocio.id && enPeriodo(g.fecha, periodo))
+  const porFecha = periodo === 'fecha'
+  const ventas = porFecha ? (delDia?.ventas ?? []) : datos.ventas.filter((v) => v.negocioId === negocio.id && enPeriodo(v.fecha, periodo))
+  const gastos = porFecha ? (delDia?.gastos ?? []) : datos.gastos.filter((g) => g.negocioId === negocio.id && enPeriodo(g.fecha, periodo))
   const ingresos = ventas.reduce((s, v) => s + v.total, 0)
   const egresos = gastos.reduce((s, g) => s + g.monto, 0)
 
@@ -39,7 +56,16 @@ export default function Movimientos({ datos, negocio, esDueno }) {
         {Object.entries(PERIODOS).map(([k, n]) => (
           <button key={k} className={'chip' + (k === periodo ? ' activo' : '')} onClick={() => setPeriodo(k)}>{n}</button>
         ))}
+        {conCalendario && (
+          <label className={'chip chip-fecha' + (porFecha ? ' activo' : '')}>
+            <CalendarDays size={15} />
+            <input type="date" value={dia} max={new Date().toLocaleDateString('en-CA')} aria-label="Ver un día exacto"
+              onChange={(e) => { setDia(e.target.value); if (e.target.value) setPeriodo('fecha') }} />
+          </label>
+        )}
       </div>
+      {porFecha && dia && !delDia && !errorDia && <p className="sub">Cargando ese día…</p>}
+      {errorDia && <p className="aviso error">{errorDia}</p>}
 
       <section className="tarjetas">
         <div className="tarjeta t-verde"><span>Ingresos</span><strong>{pesos(ingresos)}</strong></div>
@@ -56,20 +82,24 @@ export default function Movimientos({ datos, negocio, esDueno }) {
         {confirmando && lista.some((m) => m.id === confirmando && m.clase === 'venta') && (
           <p className="aviso">Al anular una venta, los productos vuelven al inventario.</p>
         )}
-        {lista.length === 0 && <p className="vacio">No hay movimientos en este periodo.</p>}
+        {lista.length === 0 && <p className="vacio">{porFecha && !dia ? 'Elige un día en el calendario.' : 'No hay movimientos en este periodo.'}</p>}
         {lista.map((m) => (
           <div className="movimiento" key={m.id}>
             <span className={'punto ' + m.clase} />
             <div className="detalle">
-              <div>{m.clase === 'venta' ? `Venta #${m.numero}` : m.concepto}</div>
+              <div>{m.clase === 'venta' ? `${m.metodo === 'Consumo interno' ? 'Consumo interno' : 'Venta'} #${m.numero}${m.cliente ? ` · ${m.cliente}` : ''}` : m.concepto}</div>
               <small>
                 {new Date(m.fecha).toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' })} · {m.metodo}
                 {m.clase === 'venta' ? ` · ${m.items.map((i) => `${i.cantidad} ${i.nombre}`).join(', ')}` : ` · ${m.categoria}`}
               </small>
             </div>
-            <strong className={m.clase === 'venta' ? 'verde' : 'rojo'}>
-              {m.clase === 'venta' ? '+' : '−'}{pesos(m.clase === 'venta' ? m.total : m.monto)}
-            </strong>
+            {m.clase === 'venta' && m.metodo === 'Consumo interno' ? (
+              <strong className="suave">Costo {pesos(m.costo)}</strong>
+            ) : (
+              <strong className={m.clase === 'venta' ? 'verde' : 'rojo'}>
+                {m.clase === 'venta' ? '+' : '−'}{pesos(m.clase === 'venta' ? m.total : m.monto)}
+              </strong>
+            )}
             {!esDueno ? null : confirmando === m.id ? (
               <span className="confirmar">
                 <button className="btn enlace" onClick={() => setConfirmando(null)}>No</button>

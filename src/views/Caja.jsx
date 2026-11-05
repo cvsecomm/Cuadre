@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Search, Trash2, Minus, Plus, Pencil, Printer, ChevronRight, ChevronLeft, Receipt } from 'lucide-react'
-import { pesos, registrarVenta, crearPedido, guardarPedido, borrarPedido, METODOS_PAGO } from '../store'
+import { pesos, registrarVenta, crearPedido, guardarPedido, borrarPedido, METODOS_PAGO, esCobertizo } from '../store'
+
+const CONSUMO = 'Consumo interno'
 import ImagenProducto from './Imagen'
 import FormGasto from './FormGasto'
 import FormVentaML from './FormVentaML'
@@ -73,6 +75,11 @@ export default function Caja({ datos, negocio }) {
   const total = items.reduce((s, i) => s + i.producto.precio * i.cantidad, 0) + mitades.reduce((s, m) => s + m.precio * m.cantidad, 0)
   const unidades = items.reduce((s, i) => s + i.cantidad, 0) + mitades.reduce((s, m) => s + m.cantidad, 0)
   const lineas = items.length + mitades.length
+  // Consumo interno (comida del personal, etc.): sale del inventario pero no se cobra.
+  const metodos = esCobertizo(negocio) ? [...METODOS_PAGO, CONSUMO] : METODOS_PAGO
+  const esConsumo = metodo === CONSUMO
+  const costoTotal = items.reduce((s, i) => s + i.producto.costo * i.cantidad, 0)
+    + mitades.reduce((s, m) => s + (m.a.costo + m.b.costo) / 2 * m.cantidad, 0)
   const cambio = Number(recibido) - total
 
   const nombreNuevo = () => {
@@ -123,10 +130,10 @@ export default function Caja({ datos, negocio }) {
     try {
       venta = await registrarVenta({
         items: [
-          ...items.map(({ producto: p, cantidad }) => ({ productoId: p.id, nombre: p.nombre, precio: p.precio, costo: p.costo, cantidad })),
+          ...items.map(({ producto: p, cantidad }) => ({ productoId: p.id, nombre: p.nombre, precio: esConsumo ? 0 : p.precio, costo: p.costo, cantidad })),
           // Cada mitad descuenta media unidad de su sabor; entre las dos suman el precio del más caro.
           ...mitades.flatMap((m) => [m.a, m.b].map((p) => ({
-            productoId: p.id, nombre: `½ ${p.nombre}`, precio: m.precio, costo: p.costo, cantidad: m.cantidad / 2,
+            productoId: p.id, nombre: `½ ${p.nombre}`, precio: esConsumo ? 0 : m.precio, costo: p.costo, cantidad: m.cantidad / 2,
           }))),
         ],
         metodo,
@@ -140,7 +147,7 @@ export default function Caja({ datos, negocio }) {
     setCobrando(false)
     setRecibo({ ...venta, recibido: Number(recibido) || 0 })
     borrarPedido(pedido.id)
-    setPedidoId(null); setRecibido(''); setCliente(''); setClienteDoc(''); setVerCarrito(false); setPaso('productos')
+    setPedidoId(null); setMetodo(METODOS_PAGO[0]); setRecibido(''); setCliente(''); setClienteDoc(''); setVerCarrito(false); setPaso('productos')
   }
 
   return (
@@ -282,12 +289,13 @@ export default function Caja({ datos, negocio }) {
             </div>
             <div className="carrito-items">
               <div className="total-pagar">
-                <small>Total a cobrar</small>
-                <strong>{pesos(total)}</strong>
+                <small>{esConsumo ? 'Consumo interno (no se cobra)' : 'Total a cobrar'}</small>
+                <strong>{pesos(esConsumo ? 0 : total)}</strong>
+                {esConsumo && <small>Costo de lo consumido: {pesos(costoTotal)}</small>}
               </div>
               <label className="etiqueta-campo">Método de pago</label>
               <div className="metodos">
-                {METODOS_PAGO.map((m) => (
+                {metodos.map((m) => (
                   <button key={m} className={m === metodo ? 'activo' : ''} onClick={() => setMetodo(m)}>{m}</button>
                 ))}
               </div>
@@ -302,12 +310,16 @@ export default function Caja({ datos, negocio }) {
                   )}
                 </>
               )}
-              <label className="etiqueta-campo" htmlFor="cliente">Cliente (opcional)</label>
-              <input id="cliente" className="campo" value={cliente} onChange={(e) => setCliente(e.target.value)} />
-              <label className="etiqueta-campo" htmlFor="cliente-doc">Cédula o NIT del cliente (opcional)</label>
-              <input id="cliente-doc" className="campo" inputMode="numeric" value={clienteDoc} onChange={(e) => setClienteDoc(e.target.value)} />
+              <label className="etiqueta-campo" htmlFor="cliente">{esConsumo ? '¿Quién lo consumió? (opcional)' : 'Cliente (opcional)'}</label>
+              <input id="cliente" className="campo" placeholder={esConsumo ? 'Ej: almuerzo de Carlos' : ''} value={cliente} onChange={(e) => setCliente(e.target.value)} />
+              {!esConsumo && (
+                <>
+                  <label className="etiqueta-campo" htmlFor="cliente-doc">Cédula o NIT del cliente (opcional)</label>
+                  <input id="cliente-doc" className="campo" inputMode="numeric" value={clienteDoc} onChange={(e) => setClienteDoc(e.target.value)} />
+                </>
+              )}
             </div>
-            <button className="btn primario grande" onClick={cobrar} disabled={cobrando}>{cobrando ? 'Guardando…' : 'Confirmar venta'}</button>
+            <button className="btn primario grande" onClick={cobrar} disabled={cobrando}>{cobrando ? 'Guardando…' : esConsumo ? 'Registrar consumo' : 'Confirmar venta'}</button>
           </>
         )}
       </aside>
@@ -339,7 +351,7 @@ export default function Caja({ datos, negocio }) {
         <div className="modal-fondo" onClick={() => setRecibo(null)}>
           <div className="modal recibo" onClick={(e) => e.stopPropagation()}>
             <div className="exito no-imprimir">✓</div>
-            <h2 className="no-imprimir">¡Venta registrada!</h2>
+            <h2 className="no-imprimir">{recibo.metodo === CONSUMO ? "¡Consumo registrado!" : "¡Venta registrada!"}</h2>
             <div className="recibo-negocio">
               <strong>{negocio.nombre}</strong>
               {negocio.nit && <span>NIT {negocio.nit}</span>}

@@ -12,7 +12,7 @@ const NEGOCIO_KEY = 'cuadre-negocio-activo'
 
 let estado = {
   modo: 'nube', listo: false, usuario: null, rol: null, error: '',
-  negocioActivo: null, negocios: [], productos: [], ventas: [], gastos: [], pedidos: [], cierres: [],
+  negocioActivo: null, negocios: [], productos: [], ventas: [], gastos: [], pedidos: [], cierres: [], empleados: [], turnos: [],
 }
 const oyentes = new Set()
 function fijar(cambios) {
@@ -44,11 +44,35 @@ export async function iniciarSesion(email, clave) {
 
 export async function cerrarSesion() {
   await supabase.auth.signOut()
-  fijar({ usuario: null, negocios: [], productos: [], ventas: [], gastos: [], pedidos: [], cierres: [], negocioActivo: null })
+  fijar({ usuario: null, negocios: [], productos: [], ventas: [], gastos: [], pedidos: [], cierres: [], empleados: [], turnos: [], negocioActivo: null })
 }
 
 // ---------- Lectura ----------
 const num = (v) => Number(v ?? 0)
+
+const aVenta = (v) => ({
+  id: v.id, negocioId: v.negocio_id, numero: v.numero, fecha: v.fecha, metodo: v.metodo,
+  cliente: v.cliente, clienteDoc: v.cliente_doc || '', nota: v.nota, total: num(v.total), costo: num(v.costo),
+  items: v.venta_items.map((i) => ({
+    productoId: i.producto_id, nombre: i.nombre, precio: num(i.precio), costo: num(i.costo), cantidad: num(i.cantidad),
+  })),
+})
+const aGasto = (g) => ({
+  id: g.id, negocioId: g.negocio_id, fecha: g.fecha, concepto: g.concepto,
+  categoria: g.categoria, monto: num(g.monto), metodo: g.metodo,
+})
+
+// Ventas y gastos de un rango de fechas cualquiera (para consultar días más antiguos que los que se cargan al inicio).
+export async function movimientosEntre(desde, hasta) {
+  const [vent, gast] = await Promise.all([
+    supabase.from('ventas').select('*, venta_items(*)').eq('negocio_id', estado.negocioActivo).eq('anulada', false)
+      .gte('fecha', desde.toISOString()).lt('fecha', hasta.toISOString()).order('fecha', { ascending: false }),
+    supabase.from('gastos').select('*').eq('negocio_id', estado.negocioActivo)
+      .gte('fecha', desde.toISOString()).lt('fecha', hasta.toISOString()).order('fecha', { ascending: false }),
+  ])
+  if (vent.error || gast.error) throw new Error((vent.error || gast.error).message)
+  return { ventas: vent.data.map(aVenta), gastos: gast.data.map(aGasto) }
+}
 
 async function recargar() {
   try {
@@ -77,19 +101,10 @@ async function recargar() {
         id: p.id, negocioId: p.negocio_id, nombre: p.nombre, categoria: p.categoria, imagen: p.imagen || '',
         precio: num(p.precio), costo: num(p.costo), stock: num(p.stock), minimo: num(p.minimo),
       })),
-      ventas: vent.data.map((v) => ({
-        id: v.id, negocioId: v.negocio_id, numero: v.numero, fecha: v.fecha, metodo: v.metodo,
-        cliente: v.cliente, clienteDoc: v.cliente_doc || '', nota: v.nota, total: num(v.total), costo: num(v.costo),
-        items: v.venta_items.map((i) => ({
-          productoId: i.producto_id, nombre: i.nombre, precio: num(i.precio), costo: num(i.costo), cantidad: num(i.cantidad),
-        })),
-      })),
-      gastos: gast.data.map((g) => ({
-        id: g.id, negocioId: g.negocio_id, fecha: g.fecha, concepto: g.concepto,
-        categoria: g.categoria, monto: num(g.monto), metodo: g.metodo,
-      })),
+      ventas: vent.data.map(aVenta),
+      gastos: gast.data.map(aGasto),
     })
-    await Promise.all([cargarPedidos(), cargarCierres()])
+    await Promise.all([cargarPedidos(), cargarCierres(), cargarNomina()])
   } catch (e) {
     fijar({ listo: true, error: 'No pudimos cargar tus datos. Revisa tu conexión a internet. (' + (e.message || e) + ')' })
   }
@@ -112,7 +127,7 @@ async function cambio(fn) {
 // ---------- Negocios ----------
 export function cambiarNegocio(id) {
   try { localStorage.setItem(NEGOCIO_KEY, id) } catch { /* sin acceso */ }
-  fijar({ negocioActivo: id, productos: [], ventas: [], gastos: [], pedidos: [], cierres: [] })
+  fijar({ negocioActivo: id, productos: [], ventas: [], gastos: [], pedidos: [], cierres: [], empleados: [], turnos: [] })
   recargar()
 }
 
@@ -244,6 +259,50 @@ export function registrarCierre(c) {
 
 export function borrarCierre(id) {
   return cambio(() => supabase.from('cierres').delete().eq('id', id))
+}
+
+// ---------- Nómina ----------
+async function cargarNomina() {
+  const negocio = estado.negocioActivo
+  if (!negocio) return
+  const desde = new Date(); desde.setDate(desde.getDate() - 70)
+  const [emp, tur] = await Promise.all([
+    supabase.from('empleados').select('*').eq('negocio_id', negocio).order('nombre'),
+    supabase.from('turnos').select('*').eq('negocio_id', negocio).gte('fecha', desde.toLocaleDateString('en-CA'))
+      .order('fecha', { ascending: false }),
+  ])
+  if (emp.error || tur.error || negocio !== estado.negocioActivo) return // tabla sin crear o sin permiso: no se muestra
+  fijar({
+    empleados: emp.data.map((e) => ({
+      id: e.id, negocioId: e.negocio_id, nombre: e.nombre, cargo: e.cargo, valorHora: num(e.valor_hora), activo: e.activo,
+    })),
+    turnos: tur.data.map((t) => ({
+      id: t.id, negocioId: t.negocio_id, empleadoId: t.empleado_id, fecha: t.fecha, entrada: t.entrada?.slice(0, 5) || '',
+      salida: t.salida?.slice(0, 5) || '', horas: num(t.horas), valorHora: num(t.valor_hora), nota: t.nota, pagado: Boolean(t.pago_id),
+    })),
+  })
+}
+
+export function guardarEmpleado(e) {
+  const fila = { nombre: e.nombre, cargo: e.cargo, valor_hora: e.valorHora, activo: e.activo }
+  return cambio(() => e.id
+    ? supabase.from('empleados').update(fila).eq('id', e.id)
+    : supabase.from('empleados').insert({ ...fila, negocio_id: estado.negocioActivo }))
+}
+
+export function registrarTurno(t) {
+  return cambio(() => supabase.from('turnos').insert({
+    negocio_id: estado.negocioActivo, empleado_id: t.empleadoId, fecha: t.fecha, entrada: t.entrada || null,
+    salida: t.salida || null, horas: t.horas, valor_hora: t.valorHora, nota: t.nota,
+  }))
+}
+
+export function borrarTurno(id) {
+  return cambio(() => supabase.from('turnos').delete().eq('id', id))
+}
+
+export function pagarNomina(empleadoId, turnoIds, metodo) {
+  return cambio(() => supabase.rpc('pagar_nomina', { p_empleado: empleadoId, p_turnos: turnoIds, p_metodo: metodo }))
 }
 
 // ---------- Gastos ----------

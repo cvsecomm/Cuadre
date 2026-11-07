@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ShoppingBag, ArrowLeftRight, BarChart3, Package, Store, LogOut, Settings, Wallet, Users } from 'lucide-react'
+import { ShoppingBag, ArrowLeftRight, BarChart3, Package, Store, LogOut, Settings, Wallet, Users, Menu, X } from 'lucide-react'
 import { useDatos, cambiarNegocio, cerrarSesion, MODO_NUBE, esCobertizo } from './store'
 import Inicio from './views/Inicio'
 import Caja from './views/Caja'
@@ -22,12 +22,16 @@ const VISTAS = [
   { id: 'negocio', nombre: 'Negocio', Icono: Settings, Componente: Negocio, soloDueno: true },
 ]
 
+// En el celular la barra de abajo muestra estas; el resto va en "Más"
+const PRINCIPALES = ['vender', 'movimientos', 'cierre', 'inventario']
+
 const NOMBRE_ROL = { dueno: 'Dueño', cajero: 'Cajero' }
 
 export default function App() {
   const datos = useDatos()
   const [vista, setVista] = useState('vender')
   const [nuevoNegocio, setNuevoNegocio] = useState(false)
+  const [verMas, setVerMas] = useState(false)
 
   if (!datos.listo) return <div className="pantalla-centro"><p className="sub">Cargando…</p></div>
   if (MODO_NUBE && !datos.usuario) return <Login />
@@ -36,7 +40,8 @@ export default function App() {
   const esDueno = datos.rol === 'dueno'
   const negocio = datos.negocios.find((n) => n.id === datos.negocioActivo)
   const vistas = VISTAS.filter((v) => (esDueno || !v.soloDueno) && (!v.soloCobertizo || esCobertizo(negocio)))
-  const { Componente } = vistas.find((v) => v.id === vista) ?? vistas[0]
+  const vistaActual = vistas.find((v) => v.id === vista) ?? vistas[0]
+  const { Componente } = vistaActual
 
   return (
     <div className="app">
@@ -59,11 +64,15 @@ export default function App() {
         </label>
         <nav>
           {vistas.map((v) => (
-            <button key={v.id} className={v.id === vista ? 'activo' : ''} onClick={() => setVista(v.id)}>
+            <button key={v.id} className={(v.id === vista ? 'activo' : '') + (PRINCIPALES.includes(v.id) ? '' : ' extra')} onClick={() => setVista(v.id)}>
               <v.Icono size={19} strokeWidth={2} />
               <span>{v.nombre}</span>
             </button>
           ))}
+          <button className={'boton-mas' + (!PRINCIPALES.includes(vistaActual.id) ? ' activo' : '')} onClick={() => setVerMas(true)}>
+            <Menu size={19} strokeWidth={2} />
+            <span>Más</span>
+          </button>
         </nav>
         {MODO_NUBE && (
           <div className="menu-pie">
@@ -77,6 +86,27 @@ export default function App() {
         {negocio && <Componente key={negocio.id} datos={datos} negocio={negocio} irA={setVista} esDueno={esDueno} />}
       </main>
       {nuevoNegocio && <FormNegocio cerrar={() => setNuevoNegocio(false)} />}
+      {verMas && (
+        <div className="modal-fondo" onClick={() => setVerMas(false)}>
+          <div className="modal hoja-mas" onClick={(e) => e.stopPropagation()}>
+            <div className="hoja-cabeza">
+              <h2>Más opciones</h2>
+              <button className="btn enlace" onClick={() => setVerMas(false)} aria-label="Cerrar"><X size={20} /></button>
+            </div>
+            {vistas.filter((v) => !PRINCIPALES.includes(v.id)).map((v) => (
+              <button key={v.id} className={'hoja-opcion' + (v.id === vistaActual.id ? ' activo' : '')} onClick={() => { setVista(v.id); setVerMas(false) }}>
+                <v.Icono size={20} /> {v.nombre}
+              </button>
+            ))}
+            {MODO_NUBE && (
+              <>
+                <small className="hoja-correo">{datos.usuario.email}</small>
+                <button className="hoja-opcion salir" onClick={cerrarSesion}><LogOut size={20} /> Cerrar sesión</button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

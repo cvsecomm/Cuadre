@@ -144,7 +144,7 @@ strong, .precio { font-variant-numeric: tabular-nums; }
 .aviso { background: var(--ambar-suave); color: var(--ambar); padding: 8px 12px; border-radius: 10px; font-size: .9rem; font-weight: 600; }
 
 /* Inventario */
-.tabla-fila { display: grid; grid-template-columns: 2.2fr 1fr 1fr 1.1fr 90px 130px; gap: 10px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--borde); }
+.tabla-fila { display: grid; grid-template-columns: minmax(0, 2.2fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.1fr) 90px minmax(130px, auto); gap: 10px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--borde); }
 .tabla-fila.cabecera { color: var(--suave); font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
 .tabla-fila > span[data-label="Precio"] { color: var(--texto); font-weight: 700; font-family: var(--letra-titulo); }
 .tabla-fila > span[data-label="Costo"] { color: var(--suave); }
@@ -411,3 +411,71 @@ strong, .precio { font-variant-numeric: tabular-nums; }
 .receta-linea .campo { margin: 0; }
 .receta-unidad { color: var(--suave); font-size: .9rem; min-width: 2.5em; }
 .compra-insumo { background: var(--marca-suave); border-radius: 12px; padding: 10px 12px; margin: 8px 0 6px; }
+
+/* ---------- Ajustes generales para celular y web ---------- */
+button, .btn, .chip, a { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+.boton-mas { display: none !important; }
+.hoja-cabeza { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.hoja-cabeza h2 { margin: 0; }
+.hoja-opcion { display: flex; align-items: center; gap: 14px; width: 100%; padding: 14px 10px; border: 0; border-radius: 12px; background: none; font: inherit; font-weight: 700; color: var(--texto); cursor: pointer; text-align: left; }
+.hoja-opcion:hover, .hoja-opcion.activo { background: var(--marca-suave); }
+.hoja-opcion.salir { color: var(--rojo); }
+.hoja-correo { display: block; color: var(--suave); padding: 12px 10px 0; margin-top: 8px; border-top: 1px solid var(--borde); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+@media (max-width: 800px) {
+  /* barra de abajo: 4 secciones + "Más" */
+  .menu nav button.extra { display: none; }
+  .boton-mas { display: flex !important; }
+  .menu nav button { font-size: .74rem; padding: 8px 2px; min-height: 52px; }
+  .menu nav button.activo { background: var(--marca-suave); }
+
+  /* iPhone hace zoom si el texto de un campo es menor a 16px */
+  input, select, textarea, .campo { font-size: 16px; }
+
+  /* ventanas como hoja que sube desde abajo */
+  .modal-fondo { place-items: end center; padding: 0; }
+  .modal { max-width: 100%; border-radius: 20px 20px 0 0; max-height: 92vh; padding: 20px 18px calc(20px + env(safe-area-inset-bottom)); }
+  .modal .acciones { flex-wrap: wrap; }
+  .modal .acciones .btn { flex: 1 1 auto; padding-top: 12px; padding-bottom: 12px; }
+
+  /* encabezados: título arriba y botones debajo si no caben */
+  .titulo { flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
+  .titulo > div:first-child { flex: 1 1 180px; min-width: 0; }
+  .titulo .btn { white-space: nowrap; padding: 10px 14px; font-size: .92rem; }
+  .titulo-acciones { width: 100%; flex-wrap: nowrap; }
+  .titulo-acciones .btn { flex: 1; text-align: center; }
+  .ocultar-movil { display: none !important; }
+
+  /* Vender: buscador arriba y botones en una fila */
+  .barra-vender { gap: 8px; }
+  .barra-vender .buscador { flex: 1 1 100%; }
+  .vender-acciones { flex: 1 1 100%; }
+  .vender-acciones > * { flex: 1 1 0; min-width: 0; white-space: nowrap; padding: 9px 6px; font-size: .84rem; text-align: center; border-radius: 999px; }
+  .pestanas { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+  .pestanas::-webkit-scrollbar { display: none; }
+  .pestanas button { flex: none; }
+  .pos-productos { padding-bottom: 72px; }
+
+  /* filtros en una fila que se desliza */
+  .chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-left: -16px; margin-right: -16px; padding: 0 16px; }
+  .chips::-webkit-scrollbar { display: none; }
+  .chips > * { flex: none; }
+}
+
+/* Vender: botones juntos al lado del buscador */
+.vender-acciones { display: flex; gap: 8px; align-items: center; }
+.vender-acciones > * { white-space: nowrap; }
+.barra-vender .buscador { flex: 1 1 200px; }
+
+/* Tablet y computador pequeño */
+@media (min-width: 801px) and (max-width: 1150px) {
+  .menu { width: 196px; padding: 18px 10px; }
+  .contenido { padding: 20px; }
+  .pos { grid-template-columns: minmax(0, 1fr) 300px; gap: 14px; }
+  .barra-vender h1 { display: none; }
+  .vender-acciones { flex: 1 1 100%; }
+  .vender-acciones > * { flex: 1 1 0; min-width: 0; text-align: center; padding: 9px 6px; font-size: .84rem; overflow: hidden; text-overflow: ellipsis; }
+  .tabla-fila { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr) 80px minmax(120px, auto); }
+  .tabla-fila > :nth-child(4) { display: none; }
+  .tarjeta strong { font-size: 1.3rem; }
+}

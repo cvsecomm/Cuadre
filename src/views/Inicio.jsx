@@ -30,7 +30,7 @@ export default function Inicio({ datos, negocio, irA }) {
           <h1>Resumen de {negocio.nombre.toLowerCase()}</h1>
           <p className="sub">{new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
         </div>
-        <button className="btn primario" onClick={() => irA('vender')}>Nueva venta</button>
+        <button className="btn primario ocultar-movil" onClick={() => irA('vender')}>Nueva venta</button>
       </header>
 
       <section className="tarjetas">

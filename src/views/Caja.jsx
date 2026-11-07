@@ -160,11 +160,13 @@ export default function Caja({ datos, negocio }) {
             <Search size={17} />
             <input placeholder="Buscar productos" value={buscar} onChange={(e) => setBuscar(e.target.value)} />
           </label>
-          <button className={'chip modo-ml' + (modoML ? ' activo' : '')} onClick={cambiarModoML} aria-pressed={modoML}>
-            Mercado Libre {modoML ? 'activado' : ''}
-          </button>
-          {!modoML && <button className="chip mitad-boton" onClick={() => setElegirMitad(true)}>½ Mitad y mitad</button>}
-          <button className="btn rojo-solido" onClick={() => setNuevoGasto(true)}>Nuevo gasto</button>
+          <div className="vender-acciones">
+            <button className={'chip modo-ml' + (modoML ? ' activo' : '')} onClick={cambiarModoML} aria-pressed={modoML}>
+              Mercado Libre {modoML ? 'activado' : ''}
+            </button>
+            {!modoML && <button className="chip mitad-boton" onClick={() => setElegirMitad(true)}>½ Mitad y mitad</button>}
+            <button className="btn rojo-solido" onClick={() => setNuevoGasto(true)}>Nuevo gasto</button>
+          </div>
         </header>
         {modoML && <p className="aviso ml-aviso">Modo Mercado Libre: toca un producto y escribe cuánto te llegó.</p>}
         <div className="pestanas">

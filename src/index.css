@@ -27,6 +27,7 @@
   color-scheme: light;
 }
 * { box-sizing: border-box; }
+html, body { overflow-x: clip; }
 body { margin: 0; background: var(--fondo); color: var(--texto); }
 button, input, select { font: inherit; color: inherit; }
 h1, h2, .marca, strong, .precio { font-family: var(--letra-titulo); }
@@ -170,13 +171,14 @@ strong, .precio { font-variant-numeric: tabular-nums; }
   .tarjetas > :last-child:nth-child(odd) { grid-column: 1 / -1; }
   .tarjeta { padding: 14px; }
   .tarjeta strong { font-size: 1.2rem; }
-  .dos-columnas { grid-template-columns: 1fr; }
-  .pos { grid-template-columns: 1fr; }
+  .dos-columnas { grid-template-columns: minmax(0, 1fr); }
+  .pos { grid-template-columns: minmax(0, 1fr); }
+  .pos > * { min-width: 0; }
   .grilla { grid-template-columns: 1fr 1fr; gap: 10px; }
   .producto .img-producto { height: 96px; }
   .pos-carrito { display: none; }
   .pos-carrito.abierto { display: flex; position: fixed; inset: 0; z-index: 40; border-radius: 0; max-height: none; top: 0; }
-  .ver-carrito:not([hidden]) { display: block; position: fixed; left: 16px; right: 16px; bottom: 78px; z-index: 30; padding: 15px; border-radius: 14px; border: 0; background: var(--marca); color: var(--sobre-marca); font-weight: 800; font-size: 1rem; box-shadow: 0 6px 18px rgba(32, 35, 43, .18); }
+  .ver-carrito:not([hidden]) { display: block; position: fixed; left: 16px; right: 16px; bottom: calc(74px + env(safe-area-inset-bottom)); z-index: 30; padding: 15px; border-radius: 14px; border: 0; background: var(--marca); color: var(--sobre-marca); font-weight: 800; font-size: 1rem; box-shadow: 0 6px 18px rgba(32, 35, 43, .18); }
   .solo-movil { display: inline-block; }
   /* inventario en celular: foto y nombre a la izquierda, precio y disponibles a la derecha */
   .tabla-fila { grid-template-columns: minmax(0, 1fr) auto; column-gap: 12px; row-gap: 2px; padding: 12px 0; }

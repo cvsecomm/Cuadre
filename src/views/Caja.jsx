@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
-import { Search, Trash2, Minus, Plus, Pencil, Printer, ChevronRight, ChevronLeft, Receipt, Split, X } from 'lucide-react'
+import { Search, Trash2, Minus, Plus, Pencil, Printer, ChevronRight, ChevronLeft, Receipt, Split } from 'lucide-react'
 import { pesos, registrarVenta, crearPedido, guardarPedido, borrarPedido, METODOS_PAGO, esCobertizo, conRecetas } from '../store'
 
 const CONSUMO = 'Consumo interno'
+const CORTO = { 'Nequi / Daviplata': 'Nequi', Transferencia: 'Transf.' }
 import ImagenProducto from './Imagen'
 import FormGasto from './FormGasto'
 import FormVentaML from './FormVentaML'
@@ -48,7 +49,6 @@ export default function Caja({ datos, negocio }) {
   const [recibido, setRecibido] = useState('')
   // Pago dividido (El Cobertizo): null = un solo método; si no, [{ metodo, monto }].
   const [pagos, setPagos] = useState(null)
-  const [partes, setPartes] = useState(0) // > 0 cuando se dividió en partes iguales
   const [dividir, setDividir] = useState(false)
   const [cliente, setCliente] = useState('')
   const [clienteDoc, setClienteDoc] = useState('')
@@ -91,21 +91,12 @@ export default function Caja({ datos, negocio }) {
   const sumaPagos = (pagos ?? []).reduce((s, p) => s + (Number(p.monto) || 0), 0)
   const faltaPagos = total - sumaPagos
   const pagosListos = !pagos || (faltaPagos === 0 && pagos.every((p) => Number(p.monto) > 0))
-  const enPartes = (n) => {
-    const parte = Math.floor(total / n)
-    return Array.from({ length: n }, (_, i) => ({ metodo: 'Efectivo', monto: String(i === n - 1 ? total - parte * (n - 1) : parte) }))
-  }
-  const dividirPartes = (n) => {
-    const nuevo = Math.max(2, Math.min(20, n))
-    setPartes(nuevo)
-    setPagos(enPartes(nuevo).map((p, i) => ({ ...p, metodo: pagos?.[i]?.metodo ?? p.metodo })))
-  }
   const cambiarCantidadPagos = (n) => {
-    if (partes) { dividirPartes(partes + n); return }
     if (n < 0 && pagos.length <= 2) return
     const lista = n > 0 ? [...pagos, { metodo: 'Efectivo', monto: '' }] : pagos.slice(0, -1)
     setPagos(repartir(lista))
   }
+  const igualar = () => setPagos(repartir(pagos.map((p) => ({ ...p, fijo: false }))))
   // Lo que no han fijado a mano se reparte en partes iguales entre los pagos que quedan.
   const repartir = (lista) => {
     const libres = lista.map((p, j) => (p.fijo ? -1 : j)).filter((j) => j >= 0)
@@ -122,10 +113,9 @@ export default function Caja({ datos, negocio }) {
     if (campo === 'metodo') { setPagos(pagos.map((p, j) => (j === i ? { ...p, metodo: valor } : p))); return }
     // "Yo pago tanto": ese monto queda fijo y el resto se reparte entre los demás.
     const nuevo = pagos.map((p, j) => (j === i ? { ...p, monto: valor, fijo: valor !== '' } : p))
-    setPagos(repartir(nuevo)); setPartes(0)
+    setPagos(repartir(nuevo))
   }
-  const quitarPago = (i) => { setPagos(repartir(pagos.filter((_, j) => j !== i))); setPartes(0) }
-  const cancelarPagos = () => { setPagos(null); setPartes(0) }
+  const cancelarPagos = () => setPagos(null)
 
   // Lo que hay en el pedido, línea por línea, para dividir la cuenta.
   const lineasPedido = (pedido?.items ?? []).map((it, indice) => {
@@ -218,7 +208,7 @@ export default function Caja({ datos, negocio }) {
     setCobrando(false)
     setRecibo({ ...venta, recibido: Number(recibido) || 0 })
     borrarPedido(pedido.id)
-    setPedidoId(null); setMetodo(METODOS_PAGO[0]); setRecibido(''); setPagos(null); setPartes(0); setCliente(''); setClienteDoc(''); setVerCarrito(false); setPaso('productos')
+    setPedidoId(null); setMetodo(METODOS_PAGO[0]); setRecibido(''); setPagos(null); setCliente(''); setClienteDoc(''); setVerCarrito(false); setPaso('productos')
   }
 
   return (
@@ -375,36 +365,41 @@ export default function Caja({ datos, negocio }) {
               </div>
               {pagos ? (
                 <div className="pago-dividido">
-                  <div className="pago-dividido-cabecera">
-                    <label className="etiqueta-campo">{partes ? 'Partes iguales' : 'Dividir el pago'}</label>
-                    <button className="btn enlace subrayado" onClick={cancelarPagos}>Un solo método</button>
-                  </div>
-                  <div className="partes">
-                    <span>Dividir entre</span>
-                    <div className="cantidad">
-                      <button onClick={() => cambiarCantidadPagos(-1)} aria-label="Una persona menos"><Minus size={14} /></button>
-                      <span>{pagos.length}</span>
-                      <button onClick={() => cambiarCantidadPagos(1)} aria-label="Una persona más"><Plus size={14} /></button>
+                  <div className="dividir-cabecera">
+                    <div>
+                      <strong>Dividir el pago</strong>
+                      <small>¿Entre cuántas personas?</small>
                     </div>
-                    <span>personas</span>
-                    {!partes && <button className="btn enlace subrayado" onClick={() => dividirPartes(pagos.length)}>en partes iguales</button>}
+                    <div className="cantidad grande">
+                      <button onClick={() => cambiarCantidadPagos(-1)} aria-label="Una persona menos" disabled={pagos.length <= 2}><Minus size={16} /></button>
+                      <span>{pagos.length}</span>
+                      <button onClick={() => cambiarCantidadPagos(1)} aria-label="Una persona más"><Plus size={16} /></button>
+                    </div>
                   </div>
-                  <small className="ayuda-pagos">Si alguien dice "yo pago tanto", escribe su monto: lo que falta se reparte solo entre los demás.</small>
                   {pagos.map((p, i) => (
-                    <div className="pago-fila" key={i}>
-                      <select className="campo" value={p.metodo} onChange={(e) => cambiarPago(i, 'metodo', e.target.value)} aria-label={`Método del pago ${i + 1}`}>
-                        {METODOS_PAGO.map((m) => <option key={m}>{m}</option>)}
-                      </select>
-                      <input className="campo" type="number" inputMode="numeric" placeholder="$ 0" value={p.monto}
-                        onChange={(e) => cambiarPago(i, 'monto', e.target.value)} aria-label={`Monto del pago ${i + 1}`} />
-                      {pagos.length > 2 && <button className="icono-borrar" onClick={() => quitarPago(i)} aria-label="Quitar pago"><X size={16} /></button>}
+                    <div className={'persona' + (p.fijo ? ' fija' : '')} key={i}>
+                      <div className="persona-arriba">
+                        <span className="persona-numero">{i + 1}</span>
+                        <label className="persona-monto">
+                          <span>$</span>
+                          <input type="text" inputMode="numeric" placeholder="0" value={p.monto === '' ? '' : Number(p.monto).toLocaleString('es-CO')}
+                            onChange={(e) => cambiarPago(i, 'monto', e.target.value.replace(/\D/g, ''))} aria-label={`Monto de la persona ${i + 1}`} />
+                        </label>
+                      </div>
+                      <div className="persona-metodos">
+                        {METODOS_PAGO.map((m) => (
+                          <button key={m} className={m === p.metodo ? 'activo' : ''} onClick={() => cambiarPago(i, 'metodo', m)}>{CORTO[m] ?? m}</button>
+                        ))}
+                      </div>
                     </div>
                   ))}
-                  <button className="btn enlace" onClick={() => { setPagos(repartir([...pagos, { metodo: 'Efectivo', monto: '' }])); setPartes(0) }}>
-                    <Plus size={15} /> Agregar otro pago
-                  </button>
-                  <div className={'cambio' + (faltaPagos !== 0 ? ' falta' : '')}>
-                    <span>{faltaPagos > 0 ? 'Falta' : faltaPagos < 0 ? 'Sobra' : 'Completo ✓'}</span><strong>{pesos(Math.abs(faltaPagos))}</strong>
+                  <p className="ayuda-pagos">Toca un monto para cambiarlo. Lo que falta se reparte solo entre los demás.</p>
+                  <div className={'estado-pagos' + (faltaPagos !== 0 ? ' falta' : '')}>
+                    <span>{faltaPagos > 0 ? `Faltan ${pesos(faltaPagos)}` : faltaPagos < 0 ? `Sobran ${pesos(-faltaPagos)}` : '✓ Cuenta completa'}</span>
+                    <span className="estado-acciones">
+                      {pagos.some((p) => p.fijo) && <button className="btn enlace subrayado" onClick={igualar}>Repartir igual</button>}
+                      <button className="btn enlace subrayado" onClick={cancelarPagos}>Cancelar</button>
+                    </span>
                   </div>
                 </div>
               ) : (
@@ -416,10 +411,11 @@ export default function Caja({ datos, negocio }) {
                 ))}
               </div>
               {cobertizo && !esConsumo && total > 0 && (
-                <div className="dividir-opciones">
-                  <button className="btn" onClick={() => { setPartes(0); setPagos([{ metodo: 'Nequi / Daviplata', monto: '' }, { metodo: 'Efectivo', monto: '' }]) }}>Dividir el pago</button>
-                  <button className="btn" onClick={() => { setPartes(2); setPagos(enPartes(2)) }}>Dividir en partes iguales</button>
-                </div>
+                <button className="boton-dividir" onClick={() => setPagos(repartir([{ metodo: 'Efectivo', monto: '' }, { metodo: 'Efectivo', monto: '' }]))}>
+                  <Split size={18} />
+                  <span><strong>Dividir el pago</strong><small>Entre varias personas o varios métodos</small></span>
+                  <ChevronRight size={18} />
+                </button>
               )}
               {metodo === 'Efectivo' && (
                 <>

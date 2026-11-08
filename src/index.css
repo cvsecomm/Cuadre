@@ -484,20 +484,36 @@ button, .btn, .chip, a { touch-action: manipulation; -webkit-tap-highlight-color
 
 /* Dividir cuenta y pago dividido (El Cobertizo) */
 .pedido-botones { display: flex; gap: 8px; }
-.pedido-botones > .btn { flex: 1 1 0; min-width: 0; }
-.dividir-opciones { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: -4px 0 12px; }
-.dividir-opciones .btn { font-size: .84rem; padding: 9px 6px; font-weight: 700; }
-.pago-dividido { margin-bottom: 4px; }
-.pago-dividido-cabecera { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-.pago-dividido-cabecera .etiqueta-campo { margin: 0; }
-.partes { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 8px 0 10px; font-size: .9rem; color: var(--suave, #6b7280); }
-.pago-fila { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) auto; gap: 8px; align-items: center; margin-bottom: 8px; }
-.pago-fila .campo { margin: 0; }
-.pago-dividido > .btn.enlace { display: inline-flex; align-items: center; gap: 4px; margin-bottom: 10px; padding-left: 0; }
-.dividir-lista { display: flex; flex-direction: column; gap: 4px; margin: 12px 0; max-height: 50vh; overflow-y: auto; }
+.pedido-botones > .btn { flex: 1 1 0; min-width: 0; white-space: nowrap; font-size: .88rem; padding-left: 6px; padding-right: 6px; }
+.boton-dividir { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 14px; margin: -2px 0 14px; border: 1.5px dashed var(--borde); border-radius: 14px; background: var(--superficie); cursor: pointer; text-align: left; color: var(--texto); font: inherit; }
+.boton-dividir > svg:first-child { color: var(--marca-oscura); flex: none; }
+.boton-dividir > span { flex: 1; display: flex; flex-direction: column; }
+.boton-dividir > svg:last-child { color: var(--suave); }
+.boton-dividir:hover { border-color: var(--marca); background: var(--marca-suave); }
+.pago-dividido { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
+.dividir-cabecera { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.dividir-cabecera strong { font-size: 1.02rem; }
+.cantidad.grande button { width: 36px; height: 36px; }
+.cantidad.grande span { min-width: 28px; font-size: 1.1rem; font-weight: 800; }
+.cantidad button:disabled { opacity: .35; cursor: default; }
+.persona { border: 1px solid var(--borde); border-radius: 14px; padding: 10px 12px; background: var(--superficie); }
+.persona.fija { border-color: var(--marca); box-shadow: 0 0 0 1px var(--marca); }
+.persona-arriba { display: flex; align-items: center; gap: 10px; }
+.persona-numero { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; background: var(--marca-suave); color: var(--texto); font-weight: 800; font-size: .85rem; flex: none; }
+.persona.fija .persona-numero { background: var(--marca); }
+.persona-monto { flex: 1; display: flex; align-items: center; gap: 4px; font-size: 1.35rem; font-weight: 800; }
+.persona-monto span { color: var(--suave); }
+.persona-monto input { flex: 1; min-width: 0; border: 0; background: transparent; font: inherit; color: var(--texto); padding: 2px 0; outline: none; }
+.persona-metodos { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+.persona-metodos button { flex: 1 1 0; min-width: 0; padding: 7px 4px; border-radius: 999px; border: 1px solid var(--borde); background: var(--superficie); font-size: .78rem; font-weight: 700; cursor: pointer; white-space: nowrap; color: var(--texto); }
+.persona-metodos button.activo { background: var(--texto); border-color: var(--texto); color: #fff; }
+.ayuda-pagos { font-size: .8rem; color: var(--suave); margin: 0; text-align: center; }
+.estado-pagos { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; padding: 11px 14px; border-radius: 12px; background: var(--verde-suave); color: var(--verde); font-weight: 800; }
+.estado-pagos.falta { background: var(--rojo-suave); color: var(--rojo); }
+.estado-acciones { display: flex; gap: 12px; }
+.estado-acciones .btn.enlace { padding: 0; font-size: .82rem; color: var(--texto); font-weight: 700; }
+.dividir-lista { display: flex; flex-direction: column; margin: 12px 0; max-height: 50vh; overflow-y: auto; }
 .dividir-fila { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--borde); }
 .dividir-totales { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
 .dividir-totales > div { display: flex; flex-direction: column; padding: 10px 12px; border-radius: 10px; background: var(--fondo); }
 .dividir-totales > div:first-child { background: var(--marca-suave); }
-.pedido-botones > .btn { white-space: nowrap; font-size: .88rem; padding-left: 6px; padding-right: 6px; }
-.ayuda-pagos { margin: -4px 0 10px; }

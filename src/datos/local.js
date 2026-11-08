@@ -169,7 +169,7 @@ export function guardarReceta(productoId, lineas) {
   })
 }
 
-export function registrarVenta({ items, metodo, cliente, clienteDoc, nota }) {
+export function registrarVenta({ items, metodo, cliente, clienteDoc, nota, pagos }) {
   const total = items.reduce((s, i) => s + i.precio * i.cantidad, 0)
   const costo = items.reduce((s, i) => s + i.costo * i.cantidad, 0)
   const ventasNegocio = estado.ventas.filter((v) => v.negocioId === estado.negocioActivo)
@@ -178,7 +178,7 @@ export function registrarVenta({ items, metodo, cliente, clienteDoc, nota }) {
     numero: ventasNegocio.length + 1,
     negocioId: estado.negocioActivo,
     fecha: new Date().toISOString(),
-    items, total, costo, metodo, cliente: cliente || '', clienteDoc: clienteDoc || '', nota: nota || '',
+    items, total, costo, metodo, cliente: cliente || '', clienteDoc: clienteDoc || '', nota: nota || '', pagos: pagos || null,
   }
   const vendidos = movimientoStock(items)
   guardar({

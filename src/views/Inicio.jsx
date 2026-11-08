@@ -1,4 +1,4 @@
-import { pesos, esHoy } from '../store'
+import { pesos, esHoy, sumarPorMetodo } from '../store'
 
 export default function Inicio({ datos, negocio, irA }) {
   const ventas = datos.ventas.filter((v) => v.negocioId === negocio.id)
@@ -20,8 +20,7 @@ export default function Inicio({ datos, negocio, irA }) {
   })
   const maximo = Math.max(...dias.map((d) => d.total), 1)
 
-  const porMetodo = {}
-  ventasHoy.forEach((v) => { porMetodo[v.metodo] = (porMetodo[v.metodo] || 0) + v.total })
+  const porMetodo = sumarPorMetodo(ventasHoy)
 
   return (
     <>

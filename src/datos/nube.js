@@ -53,6 +53,7 @@ const num = (v) => Number(v ?? 0)
 const aVenta = (v) => ({
   id: v.id, negocioId: v.negocio_id, numero: v.numero, fecha: v.fecha, metodo: v.metodo,
   cliente: v.cliente, clienteDoc: v.cliente_doc || '', nota: v.nota, total: num(v.total), costo: num(v.costo),
+  pagos: v.pagos ? v.pagos.map((p) => ({ metodo: p.metodo, monto: num(p.monto) })) : null,
   items: v.venta_items.map((i) => ({
     productoId: i.producto_id, nombre: i.nombre, precio: num(i.precio), costo: num(i.costo), cantidad: num(i.cantidad),
   })),
@@ -177,13 +178,15 @@ export function ajustarStock(id, cantidad) {
 }
 
 // ---------- Ventas ----------
-export async function registrarVenta({ items, metodo, cliente, clienteDoc, nota }) {
+export async function registrarVenta({ items, metodo, cliente, clienteDoc, nota, pagos }) {
   const venta = await cambio(() => supabase.rpc('registrar_venta', {
     p_negocio: estado.negocioActivo,
     p_items: items.map((i) => ({ producto_id: i.productoId, cantidad: i.cantidad, precio: i.precio })),
     p_metodo: metodo, p_cliente: cliente || '', p_nota: nota || '', p_cliente_doc: clienteDoc || '',
+    // Solo se envía si la cuenta se pagó con varios métodos (pago dividido).
+    ...(pagos ? { p_pagos: pagos } : {}),
   }))
-  return { ...venta, clienteDoc: venta.cliente_doc || '', total: num(venta.total), costo: num(venta.costo), items }
+  return { ...venta, clienteDoc: venta.cliente_doc || '', total: num(venta.total), costo: num(venta.costo), items, pagos: pagos || null }
 }
 
 export function anularVenta(id) {

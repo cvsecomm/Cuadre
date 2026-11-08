@@ -481,3 +481,22 @@ button, .btn, .chip, a { touch-action: manipulation; -webkit-tap-highlight-color
   .tabla-fila > :nth-child(4) { display: none; }
   .tarjeta strong { font-size: 1.3rem; }
 }
+
+/* Dividir cuenta y pago dividido (El Cobertizo) */
+.pedido-botones { display: flex; gap: 8px; }
+.pedido-botones > .btn { flex: 1 1 0; min-width: 0; }
+.dividir-opciones { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: -4px 0 12px; }
+.dividir-opciones .btn { font-size: .84rem; padding: 9px 6px; font-weight: 700; }
+.pago-dividido { margin-bottom: 4px; }
+.pago-dividido-cabecera { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.pago-dividido-cabecera .etiqueta-campo { margin: 0; }
+.partes { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 8px 0 10px; font-size: .9rem; color: var(--suave, #6b7280); }
+.pago-fila { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) auto; gap: 8px; align-items: center; margin-bottom: 8px; }
+.pago-fila .campo { margin: 0; }
+.pago-dividido > .btn.enlace { display: inline-flex; align-items: center; gap: 4px; margin-bottom: 10px; padding-left: 0; }
+.dividir-lista { display: flex; flex-direction: column; gap: 4px; margin: 12px 0; max-height: 50vh; overflow-y: auto; }
+.dividir-fila { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--borde); }
+.dividir-totales { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+.dividir-totales > div { display: flex; flex-direction: column; padding: 10px 12px; border-radius: 10px; background: var(--fondo); }
+.dividir-totales > div:first-child { background: var(--marca-suave); }
+.pedido-botones > .btn { white-space: nowrap; font-size: .88rem; padding-left: 6px; padding-right: 6px; }

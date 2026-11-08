@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Search, Trash2, Minus, Plus, Pencil, Printer, ChevronRight, ChevronLeft, Receipt } from 'lucide-react'
+import { Search, Trash2, Minus, Plus, Pencil, Printer, ChevronRight, ChevronLeft, Receipt, Split, X } from 'lucide-react'
 import { pesos, registrarVenta, crearPedido, guardarPedido, borrarPedido, METODOS_PAGO, esCobertizo, conRecetas } from '../store'
 
 const CONSUMO = 'Consumo interno'
@@ -7,6 +7,7 @@ import ImagenProducto from './Imagen'
 import FormGasto from './FormGasto'
 import FormVentaML from './FormVentaML'
 import FormMitad from './FormMitad'
+import FormDividir from './FormDividir'
 
 const leerModoML = (negocio) => {
   try {
@@ -45,6 +46,10 @@ export default function Caja({ datos, negocio }) {
   const [paso, setPaso] = useState('productos') // productos | pago
   const [metodo, setMetodo] = useState(METODOS_PAGO[0])
   const [recibido, setRecibido] = useState('')
+  // Pago dividido (El Cobertizo): null = un solo método; si no, [{ metodo, monto }].
+  const [pagos, setPagos] = useState(null)
+  const [partes, setPartes] = useState(0) // > 0 cuando se dividió en partes iguales
+  const [dividir, setDividir] = useState(false)
   const [cliente, setCliente] = useState('')
   const [clienteDoc, setClienteDoc] = useState('')
   const [recibo, setRecibo] = useState(null)
@@ -82,6 +87,55 @@ export default function Caja({ datos, negocio }) {
   const costoTotal = items.reduce((s, i) => s + i.producto.costo * i.cantidad, 0)
     + mitades.reduce((s, m) => s + (m.a.costo + m.b.costo) / 2 * m.cantidad, 0)
   const cambio = Number(recibido) - total
+  const cobertizo = esCobertizo(negocio)
+  const sumaPagos = (pagos ?? []).reduce((s, p) => s + (Number(p.monto) || 0), 0)
+  const faltaPagos = total - sumaPagos
+  const pagosListos = !pagos || (faltaPagos === 0 && pagos.every((p) => Number(p.monto) > 0))
+  const enPartes = (n) => {
+    const parte = Math.floor(total / n)
+    return Array.from({ length: n }, (_, i) => ({ metodo: 'Efectivo', monto: String(i === n - 1 ? total - parte * (n - 1) : parte) }))
+  }
+  const dividirPartes = (n) => {
+    const nuevo = Math.max(2, Math.min(20, n))
+    setPartes(nuevo)
+    setPagos(enPartes(nuevo).map((p, i) => ({ ...p, metodo: pagos?.[i]?.metodo ?? p.metodo })))
+  }
+  const cambiarPago = (i, campo, valor) => {
+    let nuevo = pagos.map((p, j) => (j === i ? { ...p, [campo]: valor } : p))
+    // Con dos pagos, el segundo se completa solo: lo que falta para el total.
+    if (campo === 'monto' && nuevo.length === 2 && valor !== '') {
+      const otro = total - (Number(valor) || 0)
+      nuevo = nuevo.map((p, j) => (j !== i ? { ...p, monto: otro > 0 ? String(otro) : '' } : p))
+    }
+    setPagos(nuevo); setPartes(0)
+  }
+  const quitarPago = (i) => { setPagos(pagos.filter((_, j) => j !== i)); setPartes(0) }
+  const cancelarPagos = () => { setPagos(null); setPartes(0) }
+
+  // Lo que hay en el pedido, línea por línea, para dividir la cuenta.
+  const lineasPedido = (pedido?.items ?? []).map((it, indice) => {
+    if (it.mitad) {
+      const m = mitades.find((x) => x.a.id === it.mitad[0] && x.b.id === it.mitad[1])
+      return m && { indice, nombre: `½ ${m.a.nombre} + ½ ${m.b.nombre}`, precio: m.precio, cantidad: it.cantidad }
+    }
+    const p = productos.find((x) => x.id === it.productoId)
+    return p && { indice, nombre: p.nombre, precio: p.precio, cantidad: it.cantidad }
+  }).filter(Boolean)
+  const dividirCuenta = (mover) => {
+    const quedan = []
+    const pasan = []
+    pedido.items.forEach((it, indice) => {
+      const k = lineasPedido.findIndex((l) => l.indice === indice)
+      const n = k >= 0 ? mover[k] : 0
+      if (n > 0) pasan.push({ ...it, cantidad: n })
+      if (it.cantidad - n > 0) quedan.push({ ...it, cantidad: it.cantidad - n })
+    })
+    let numero = 2
+    while (pedidos.some((p) => p.nombre === `${pedido.nombre} · cuenta ${numero}`)) numero++
+    guardarPedido(pedido.id, { items: quedan })
+    setPedidoId(crearPedido(`${pedido.nombre} · cuenta ${numero}`, pasan))
+    setDividir(false)
+  }
 
   const nombreNuevo = () => {
     let n = pedidos.length + 1
@@ -137,7 +191,8 @@ export default function Caja({ datos, negocio }) {
             productoId: p.id, nombre: `½ ${p.nombre}`, precio: esConsumo ? 0 : m.precio, costo: p.costo, cantidad: m.cantidad / 2,
           }))),
         ],
-        metodo,
+        metodo: pagos ? 'Mixto' : metodo,
+        pagos: pagos ? pagos.map((p) => ({ metodo: p.metodo, monto: Number(p.monto) })) : undefined,
         cliente,
         clienteDoc,
       })
@@ -148,7 +203,7 @@ export default function Caja({ datos, negocio }) {
     setCobrando(false)
     setRecibo({ ...venta, recibido: Number(recibido) || 0 })
     borrarPedido(pedido.id)
-    setPedidoId(null); setMetodo(METODOS_PAGO[0]); setRecibido(''); setCliente(''); setClienteDoc(''); setVerCarrito(false); setPaso('productos')
+    setPedidoId(null); setMetodo(METODOS_PAGO[0]); setRecibido(''); setPagos(null); setPartes(0); setCliente(''); setClienteDoc(''); setVerCarrito(false); setPaso('productos')
   }
 
   return (
@@ -274,9 +329,16 @@ export default function Caja({ datos, negocio }) {
               ))}
             </div>
             {lineas > 0 && (
-              <button className="btn imprimir-comanda" onClick={() => setComanda({ nombre: pedido.nombre, fecha: new Date(), items, mitades })}>
-                <Printer size={17} /> Imprimir comanda
-              </button>
+              <div className="pedido-botones">
+                <button className="btn imprimir-comanda" onClick={() => setComanda({ nombre: pedido.nombre, fecha: new Date(), items, mitades })}>
+                  <Printer size={17} /> Imprimir comanda
+                </button>
+                {cobertizo && unidades > 1 && (
+                  <button className="btn imprimir-comanda" onClick={() => setDividir(true)}>
+                    <Split size={17} /> Dividir cuenta
+                  </button>
+                )}
+              </div>
             )}
             <button className="continuar" disabled={lineas === 0} onClick={() => setPaso('pago')}>
               <span className="cuenta">{unidades}</span>
@@ -296,12 +358,53 @@ export default function Caja({ datos, negocio }) {
                 <strong>{pesos(esConsumo ? 0 : total)}</strong>
                 {esConsumo && <small>Costo de lo consumido: {pesos(costoTotal)}</small>}
               </div>
+              {pagos ? (
+                <div className="pago-dividido">
+                  <div className="pago-dividido-cabecera">
+                    <label className="etiqueta-campo">{partes ? 'Partes iguales' : 'Pago con varios métodos'}</label>
+                    <button className="btn enlace subrayado" onClick={cancelarPagos}>Un solo método</button>
+                  </div>
+                  <div className="partes">
+                    <span>Dividir entre</span>
+                    <div className="cantidad">
+                      <button onClick={() => dividirPartes((partes || pagos.length) - 1)} aria-label="Una persona menos"><Minus size={14} /></button>
+                      <span>{partes || pagos.length}</span>
+                      <button onClick={() => dividirPartes((partes || pagos.length) + 1)} aria-label="Una persona más"><Plus size={14} /></button>
+                    </div>
+                    <span>{partes ? 'personas' : 'pagos'}</span>
+                    {!partes && <button className="btn enlace subrayado" onClick={() => dividirPartes(pagos.length)}>en partes iguales</button>}
+                  </div>
+                  {pagos.map((p, i) => (
+                    <div className="pago-fila" key={i}>
+                      <select className="campo" value={p.metodo} onChange={(e) => cambiarPago(i, 'metodo', e.target.value)} aria-label={`Método del pago ${i + 1}`}>
+                        {METODOS_PAGO.map((m) => <option key={m}>{m}</option>)}
+                      </select>
+                      <input className="campo" type="number" inputMode="numeric" placeholder="$ 0" value={p.monto}
+                        onChange={(e) => cambiarPago(i, 'monto', e.target.value)} aria-label={`Monto del pago ${i + 1}`} />
+                      {pagos.length > 2 && <button className="icono-borrar" onClick={() => quitarPago(i)} aria-label="Quitar pago"><X size={16} /></button>}
+                    </div>
+                  ))}
+                  <button className="btn enlace" onClick={() => { setPagos([...pagos, { metodo: 'Efectivo', monto: faltaPagos > 0 ? String(faltaPagos) : '' }]); setPartes(0) }}>
+                    <Plus size={15} /> Agregar otro pago
+                  </button>
+                  <div className={'cambio' + (faltaPagos !== 0 ? ' falta' : '')}>
+                    <span>{faltaPagos > 0 ? 'Falta' : faltaPagos < 0 ? 'Sobra' : 'Completo ✓'}</span><strong>{pesos(Math.abs(faltaPagos))}</strong>
+                  </div>
+                </div>
+              ) : (
+              <>
               <label className="etiqueta-campo">Método de pago</label>
               <div className="metodos">
                 {metodos.map((m) => (
                   <button key={m} className={m === metodo ? 'activo' : ''} onClick={() => setMetodo(m)}>{m}</button>
                 ))}
               </div>
+              {cobertizo && !esConsumo && total > 0 && (
+                <div className="dividir-opciones">
+                  <button className="btn" onClick={() => { setPartes(0); setPagos([{ metodo: 'Nequi / Daviplata', monto: '' }, { metodo: 'Efectivo', monto: '' }]) }}>Pagar con varios métodos</button>
+                  <button className="btn" onClick={() => { setPartes(2); setPagos(enPartes(2)) }}>Dividir en partes iguales</button>
+                </div>
+              )}
               {metodo === 'Efectivo' && (
                 <>
                   <label className="etiqueta-campo" htmlFor="recibido">¿Con cuánto paga?</label>
@@ -313,6 +416,8 @@ export default function Caja({ datos, negocio }) {
                   )}
                 </>
               )}
+              </>
+              )}
               <label className="etiqueta-campo" htmlFor="cliente">{esConsumo ? '¿Quién lo consumió? (opcional)' : 'Cliente (opcional)'}</label>
               <input id="cliente" className="campo" placeholder={esConsumo ? 'Ej: almuerzo de Carlos' : ''} value={cliente} onChange={(e) => setCliente(e.target.value)} />
               {!esConsumo && (
@@ -322,7 +427,7 @@ export default function Caja({ datos, negocio }) {
                 </>
               )}
             </div>
-            <button className="btn primario grande" onClick={cobrar} disabled={cobrando}>{cobrando ? 'Guardando…' : esConsumo ? 'Registrar consumo' : 'Confirmar venta'}</button>
+            <button className="btn primario grande" onClick={cobrar} disabled={cobrando || !pagosListos}>{cobrando ? 'Guardando…' : esConsumo ? 'Registrar consumo' : 'Confirmar venta'}</button>
           </>
         )}
       </aside>
@@ -347,6 +452,7 @@ export default function Caja({ datos, negocio }) {
         <FormMitad productos={categoria === 'Todos' ? productos : productos.filter((p) => p.categoria === categoria)}
           cerrar={() => setElegirMitad(false)} agregar={agregarMitad} />
       )}
+      {dividir && <FormDividir lineas={lineasPedido} cerrar={() => setDividir(false)} dividir={dividirCuenta} />}
       {ventaML && <FormVentaML producto={ventaML} cerrar={() => setVentaML(null)} listo={terminarVentaML} />}
       {aviso && <div className="toast">✓ {aviso}</div>}
 
@@ -373,7 +479,9 @@ export default function Caja({ datos, negocio }) {
             ))}
             <hr />
             <div className="fila total"><span>Total</span><strong>{pesos(recibo.total)}</strong></div>
-            <div className="fila"><span>Pago</span><span>{recibo.metodo}</span></div>
+            {recibo.pagos?.length
+              ? recibo.pagos.map((p, i) => <div className="fila" key={'p' + i}><span>Pago {p.metodo}</span><span>{pesos(p.monto)}</span></div>)
+              : <div className="fila"><span>Pago</span><span>{recibo.metodo}</span></div>}
             {recibo.recibido > 0 && <div className="fila"><span>Cambio</span><span>{pesos(recibo.recibido - recibo.total)}</span></div>}
             <div className="acciones no-imprimir">
               <button className="btn" onClick={() => window.print()}>Imprimir</button>

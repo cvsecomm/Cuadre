@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import RangoFechas from './RangoFechas'
-import { pesos, borrarGasto, anularVenta, movimientosEntre, esCobertizo } from '../store'
+import { pesos, borrarGasto, anularVenta, movimientosEntre, esCobertizo, textoPago } from '../store'
 import FormGasto from './FormGasto'
 
 const PERIODOS = { hoy: 'Hoy', semana: 'Últimos 7 días', mes: 'Este mes', todo: 'Todo' }
@@ -88,7 +88,7 @@ export default function Movimientos({ datos, negocio, esDueno }) {
             <div className="detalle">
               <div>{m.clase === 'venta' ? `${m.metodo === 'Consumo interno' ? 'Consumo interno' : 'Venta'} #${m.numero}${m.cliente ? ` · ${m.cliente}` : ''}` : m.concepto}</div>
               <small>
-                {new Date(m.fecha).toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' })} · {m.metodo}
+                {new Date(m.fecha).toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' })} · {m.clase === 'venta' ? textoPago(m) : m.metodo}
                 {m.clase === 'venta' ? ` · ${m.items.map((i) => `${i.cantidad} ${i.nombre}`).join(', ')}` : ` · ${m.categoria}`}
               </small>
             </div>

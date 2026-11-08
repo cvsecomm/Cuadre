@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Printer } from 'lucide-react'
-import { pesos, registrarCierre, borrarCierre } from '../store'
+import { pesos, registrarCierre, borrarCierre, sumarPorMetodo } from '../store'
 
 const fechaHora = (iso) => new Date(iso).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' })
 
@@ -14,8 +14,7 @@ export default function Cierre({ datos, negocio, esDueno }) {
 
   const ventas = datos.ventas.filter((v) => v.negocioId === negocio.id && new Date(v.fecha) > desde)
   const gastos = datos.gastos.filter((g) => g.negocioId === negocio.id && new Date(g.fecha) > desde)
-  const porMetodo = {}
-  ventas.forEach((v) => { porMetodo[v.metodo] = (porMetodo[v.metodo] || 0) + v.total })
+  const porMetodo = sumarPorMetodo(ventas)
   const totalVentas = ventas.reduce((s, v) => s + v.total, 0)
   const gastosEfectivo = gastos.filter((g) => g.metodo === 'Efectivo').reduce((s, g) => s + g.monto, 0)
   const totalGastos = gastos.reduce((s, g) => s + g.monto, 0)

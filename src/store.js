@@ -39,6 +39,18 @@ export const pesos = (n) =>
 
 export const esHoy = (iso) => new Date(iso).toDateString() === new Date().toDateString()
 
+// Suma lo vendido por método de pago. Una venta con pago dividido reparte su total entre sus pagos.
+export function sumarPorMetodo(ventas) {
+  const porMetodo = {}
+  ventas.forEach((v) => {
+    const pagos = v.pagos?.length ? v.pagos : [{ metodo: v.metodo, monto: v.total }]
+    pagos.forEach((p) => { porMetodo[p.metodo] = (porMetodo[p.metodo] || 0) + p.monto })
+  })
+  return porMetodo
+}
+// Texto corto del pago: "Efectivo" o "Nequi $15.000 + Efectivo $35.000".
+export const textoPago = (v) => (v.pagos?.length ? v.pagos.map((p) => `${p.metodo} ${pesos(p.monto)}`).join(' + ') : v.metodo)
+
 export const METODOS_PAGO = ['Efectivo', 'Transferencia', 'Tarjeta', 'Nequi / Daviplata']
 export const CATEGORIAS_GASTO = ['Insumos', 'Mercancía', 'Arriendo', 'Servicios', 'Nómina', 'Publicidad', 'Envíos', 'Otros']
 

@@ -500,3 +500,4 @@ button, .btn, .chip, a { touch-action: manipulation; -webkit-tap-highlight-color
 .dividir-totales > div { display: flex; flex-direction: column; padding: 10px 12px; border-radius: 10px; background: var(--fondo); }
 .dividir-totales > div:first-child { background: var(--marca-suave); }
 .pedido-botones > .btn { white-space: nowrap; font-size: .88rem; padding-left: 6px; padding-right: 6px; }
+.ayuda-pagos { margin: -4px 0 10px; }

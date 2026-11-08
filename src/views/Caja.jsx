@@ -100,16 +100,31 @@ export default function Caja({ datos, negocio }) {
     setPartes(nuevo)
     setPagos(enPartes(nuevo).map((p, i) => ({ ...p, metodo: pagos?.[i]?.metodo ?? p.metodo })))
   }
-  const cambiarPago = (i, campo, valor) => {
-    let nuevo = pagos.map((p, j) => (j === i ? { ...p, [campo]: valor } : p))
-    // Con dos pagos, el segundo se completa solo: lo que falta para el total.
-    if (campo === 'monto' && nuevo.length === 2 && valor !== '') {
-      const otro = total - (Number(valor) || 0)
-      nuevo = nuevo.map((p, j) => (j !== i ? { ...p, monto: otro > 0 ? String(otro) : '' } : p))
-    }
-    setPagos(nuevo); setPartes(0)
+  const cambiarCantidadPagos = (n) => {
+    if (partes) { dividirPartes(partes + n); return }
+    if (n < 0 && pagos.length <= 2) return
+    const lista = n > 0 ? [...pagos, { metodo: 'Efectivo', monto: '' }] : pagos.slice(0, -1)
+    setPagos(repartir(lista))
   }
-  const quitarPago = (i) => { setPagos(pagos.filter((_, j) => j !== i)); setPartes(0) }
+  // Lo que no han fijado a mano se reparte en partes iguales entre los pagos que quedan.
+  const repartir = (lista) => {
+    const libres = lista.map((p, j) => (p.fijo ? -1 : j)).filter((j) => j >= 0)
+    if (libres.length === 0) return lista
+    const resto = total - lista.reduce((s, p) => s + (p.fijo ? Number(p.monto) || 0 : 0), 0)
+    const parte = Math.floor(Math.max(resto, 0) / libres.length)
+    return lista.map((p, j) => {
+      if (p.fijo) return p
+      const monto = j === libres[libres.length - 1] ? Math.max(resto, 0) - parte * (libres.length - 1) : parte
+      return { ...p, monto: monto > 0 ? String(monto) : '' }
+    })
+  }
+  const cambiarPago = (i, campo, valor) => {
+    if (campo === 'metodo') { setPagos(pagos.map((p, j) => (j === i ? { ...p, metodo: valor } : p))); return }
+    // "Yo pago tanto": ese monto queda fijo y el resto se reparte entre los demás.
+    const nuevo = pagos.map((p, j) => (j === i ? { ...p, monto: valor, fijo: valor !== '' } : p))
+    setPagos(repartir(nuevo)); setPartes(0)
+  }
+  const quitarPago = (i) => { setPagos(repartir(pagos.filter((_, j) => j !== i))); setPartes(0) }
   const cancelarPagos = () => { setPagos(null); setPartes(0) }
 
   // Lo que hay en el pedido, línea por línea, para dividir la cuenta.
@@ -361,19 +376,20 @@ export default function Caja({ datos, negocio }) {
               {pagos ? (
                 <div className="pago-dividido">
                   <div className="pago-dividido-cabecera">
-                    <label className="etiqueta-campo">{partes ? 'Partes iguales' : 'Pago con varios métodos'}</label>
+                    <label className="etiqueta-campo">{partes ? 'Partes iguales' : 'Dividir el pago'}</label>
                     <button className="btn enlace subrayado" onClick={cancelarPagos}>Un solo método</button>
                   </div>
                   <div className="partes">
                     <span>Dividir entre</span>
                     <div className="cantidad">
-                      <button onClick={() => dividirPartes((partes || pagos.length) - 1)} aria-label="Una persona menos"><Minus size={14} /></button>
-                      <span>{partes || pagos.length}</span>
-                      <button onClick={() => dividirPartes((partes || pagos.length) + 1)} aria-label="Una persona más"><Plus size={14} /></button>
+                      <button onClick={() => cambiarCantidadPagos(-1)} aria-label="Una persona menos"><Minus size={14} /></button>
+                      <span>{pagos.length}</span>
+                      <button onClick={() => cambiarCantidadPagos(1)} aria-label="Una persona más"><Plus size={14} /></button>
                     </div>
-                    <span>{partes ? 'personas' : 'pagos'}</span>
+                    <span>personas</span>
                     {!partes && <button className="btn enlace subrayado" onClick={() => dividirPartes(pagos.length)}>en partes iguales</button>}
                   </div>
+                  <small className="ayuda-pagos">Si alguien dice "yo pago tanto", escribe su monto: lo que falta se reparte solo entre los demás.</small>
                   {pagos.map((p, i) => (
                     <div className="pago-fila" key={i}>
                       <select className="campo" value={p.metodo} onChange={(e) => cambiarPago(i, 'metodo', e.target.value)} aria-label={`Método del pago ${i + 1}`}>
@@ -384,7 +400,7 @@ export default function Caja({ datos, negocio }) {
                       {pagos.length > 2 && <button className="icono-borrar" onClick={() => quitarPago(i)} aria-label="Quitar pago"><X size={16} /></button>}
                     </div>
                   ))}
-                  <button className="btn enlace" onClick={() => { setPagos([...pagos, { metodo: 'Efectivo', monto: faltaPagos > 0 ? String(faltaPagos) : '' }]); setPartes(0) }}>
+                  <button className="btn enlace" onClick={() => { setPagos(repartir([...pagos, { metodo: 'Efectivo', monto: '' }])); setPartes(0) }}>
                     <Plus size={15} /> Agregar otro pago
                   </button>
                   <div className={'cambio' + (faltaPagos !== 0 ? ' falta' : '')}>
@@ -401,7 +417,7 @@ export default function Caja({ datos, negocio }) {
               </div>
               {cobertizo && !esConsumo && total > 0 && (
                 <div className="dividir-opciones">
-                  <button className="btn" onClick={() => { setPartes(0); setPagos([{ metodo: 'Nequi / Daviplata', monto: '' }, { metodo: 'Efectivo', monto: '' }]) }}>Pagar con varios métodos</button>
+                  <button className="btn" onClick={() => { setPartes(0); setPagos([{ metodo: 'Nequi / Daviplata', monto: '' }, { metodo: 'Efectivo', monto: '' }]) }}>Dividir el pago</button>
                   <button className="btn" onClick={() => { setPartes(2); setPagos(enPartes(2)) }}>Dividir en partes iguales</button>
                 </div>
               )}

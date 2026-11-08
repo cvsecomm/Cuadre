@@ -517,3 +517,10 @@ button, .btn, .chip, a { touch-action: manipulation; -webkit-tap-highlight-color
 .dividir-totales { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
 .dividir-totales > div { display: flex; flex-direction: column; padding: 10px 12px; border-radius: 10px; background: var(--fondo); }
 .dividir-totales > div:first-child { background: var(--marca-suave); }
+.carrito-items { overflow-x: hidden; min-width: 0; }
+.pago-dividido, .persona, .persona-arriba, .persona-monto { min-width: 0; }
+.persona-monto input { width: 100%; }
+.dividir-cabecera > div:first-child { min-width: 0; }
+.dividir-cabecera strong { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.no-dividir { border: 1px solid var(--borde); background: var(--superficie); color: var(--suave); border-radius: 999px; padding: 3px 10px; font: inherit; font-size: .75rem; font-weight: 700; cursor: pointer; }
+.no-dividir:hover { color: var(--rojo); border-color: var(--rojo); }

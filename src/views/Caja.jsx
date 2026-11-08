@@ -96,9 +96,12 @@ export default function Caja({ datos, negocio }) {
     const lista = n > 0 ? [...pagos, { metodo: 'Efectivo', monto: '' }] : pagos.slice(0, -1)
     setPagos(repartir(lista))
   }
+  // Si cambia el total (se agregó o quitó algo), se vuelve a repartir.
+  useEffect(() => { setPagos((ps) => (ps ? repartirCon(ps.map((p) => ({ ...p, fijo: false })), total) : ps)) }, [total]) // eslint-disable-line react-hooks/exhaustive-deps
   const igualar = () => setPagos(repartir(pagos.map((p) => ({ ...p, fijo: false }))))
   // Lo que no han fijado a mano se reparte en partes iguales entre los pagos que quedan.
-  const repartir = (lista) => {
+  const repartir = (lista) => repartirCon(lista, total)
+  function repartirCon(lista, total) {
     const libres = lista.map((p, j) => (p.fijo ? -1 : j)).filter((j) => j >= 0)
     if (libres.length === 0) return lista
     const resto = total - lista.reduce((s, p) => s + (p.fijo ? Number(p.monto) || 0 : 0), 0)
@@ -113,6 +116,8 @@ export default function Caja({ datos, negocio }) {
     if (campo === 'metodo') { setPagos(pagos.map((p, j) => (j === i ? { ...p, metodo: valor } : p))); return }
     // "Yo pago tanto": ese monto queda fijo y el resto se reparte entre los demás.
     const nuevo = pagos.map((p, j) => (j === i ? { ...p, monto: valor, fijo: valor !== '' } : p))
+    // Siempre queda al menos otra persona libre para recibir lo que falta.
+    if (nuevo.every((p) => p.fijo)) { const k = i === nuevo.length - 1 ? i - 1 : nuevo.length - 1; nuevo[k] = { ...nuevo[k], fijo: false } }
     setPagos(repartir(nuevo))
   }
   const cancelarPagos = () => setPagos(null)
@@ -149,9 +154,9 @@ export default function Caja({ datos, negocio }) {
   }
   const nuevoPedido = () => {
     setPedidoId(crearPedido(nombreNuevo()))
-    setPaso('productos'); setConfirmarBorrar(false)
+    setPaso('productos'); setConfirmarBorrar(false); setPagos(null)
   }
-  const elegirPedido = (id) => { setPedidoId(id); setPaso('productos'); setConfirmarBorrar(false) }
+  const elegirPedido = (id) => { setPedidoId(id); setPaso('productos'); setConfirmarBorrar(false); setPagos(null) }
   const guardarItems = (items) => {
     if (pedido) guardarPedido(pedido.id, { items })
     else setPedidoId(crearPedido(nombreNuevo(), items))
@@ -355,7 +360,7 @@ export default function Caja({ datos, negocio }) {
         ) : (
           <>
             <div className="carrito-cabecera">
-              <button className="btn enlace" onClick={() => setPaso('productos')}><ChevronLeft size={18} /> Volver</button>
+              <button className="btn enlace" onClick={() => { setPaso('productos'); setPagos(null) }}><ChevronLeft size={18} /> Volver</button>
             </div>
             <div className="carrito-items">
               <div className="total-pagar">
@@ -367,7 +372,7 @@ export default function Caja({ datos, negocio }) {
                 <div className="pago-dividido">
                   <div className="dividir-cabecera">
                     <div>
-                      <strong>Dividir el pago</strong>
+                      <strong>Dividir el pago <button className="no-dividir" onClick={cancelarPagos}>✕ No dividir</button></strong>
                       <small>¿Entre cuántas personas?</small>
                     </div>
                     <div className="cantidad grande">
@@ -398,7 +403,6 @@ export default function Caja({ datos, negocio }) {
                     <span>{faltaPagos > 0 ? `Faltan ${pesos(faltaPagos)}` : faltaPagos < 0 ? `Sobran ${pesos(-faltaPagos)}` : '✓ Cuenta completa'}</span>
                     <span className="estado-acciones">
                       {pagos.some((p) => p.fijo) && <button className="btn enlace subrayado" onClick={igualar}>Repartir igual</button>}
-                      <button className="btn enlace subrayado" onClick={cancelarPagos}>Cancelar</button>
                     </span>
                   </div>
                 </div>

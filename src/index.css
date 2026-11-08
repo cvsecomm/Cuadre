@@ -524,3 +524,13 @@ button, .btn, .chip, a { touch-action: manipulation; -webkit-tap-highlight-color
 .dividir-cabecera strong { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .no-dividir { border: 1px solid var(--borde); background: var(--superficie); color: var(--suave); border-radius: 999px; padding: 3px 10px; font: inherit; font-size: .75rem; font-weight: 700; cursor: pointer; }
 .no-dividir:hover { color: var(--rojo); border-color: var(--rojo); }
+
+/* Notas para cocina por producto */
+.agregar-nota, .nota-item { display: inline-flex; align-items: center; gap: 4px; margin-top: 4px; padding: 2px 8px; border-radius: 999px; font: inherit; font-size: .76rem; font-weight: 700; cursor: pointer; max-width: 100%; }
+.agregar-nota { border: 1px dashed var(--borde); background: transparent; color: var(--suave); }
+.agregar-nota:hover { border-color: var(--marca); color: var(--texto); }
+.nota-item { border: 0; background: var(--marca-suave); color: var(--texto); text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nota-item svg, .agregar-nota svg { flex: none; }
+.campo-nota { display: block; width: 100%; margin-top: 4px; padding: 6px 10px; border: 1px solid var(--marca); border-radius: 8px; font: inherit; font-size: 16px; outline: none; box-shadow: 0 0 0 3px var(--marca-suave); }
+.item-texto { min-width: 0; }
+.comanda-nota { display: block; font-style: normal; font-size: 1.05rem; font-weight: 800; }

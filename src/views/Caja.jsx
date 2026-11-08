@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Search, Trash2, Minus, Plus, Pencil, Printer, ChevronRight, ChevronLeft, Receipt, Split } from 'lucide-react'
+import { Search, Trash2, Minus, Plus, Pencil, Printer, ChevronRight, ChevronLeft, Receipt, Split, StickyNote } from 'lucide-react'
 import { pesos, registrarVenta, crearPedido, guardarPedido, borrarPedido, METODOS_PAGO, esCobertizo, conRecetas } from '../store'
 
 const CONSUMO = 'Consumo interno'
@@ -29,11 +29,13 @@ export default function Caja({ datos, negocio }) {
   const pedido = pedidos.find((p) => p.id === pedidoId) ?? pedidos[0]
   const normales = (pedido?.items ?? []).filter((i) => !i.mitad)
   const carrito = Object.fromEntries(normales.map((i) => [i.productoId, i.cantidad])) // productoId -> cantidad
+  // Notas para cocina por producto (ej. "sin cebolla"). Salen en la comanda.
+  const notas = Object.fromEntries(normales.filter((i) => i.nota).map((i) => [i.productoId, i.nota]))
   // Pizzas mitad y mitad: { mitad: [idA, idB], cantidad }. Se cobra el precio del sabor más caro.
   const mitades = (pedido?.items ?? []).filter((i) => i.mitad).map((m) => {
     const a = productos.find((p) => p.id === m.mitad[0])
     const b = productos.find((p) => p.id === m.mitad[1])
-    return a && b && { a, b, cantidad: m.cantidad, precio: Math.max(a.precio, b.precio) }
+    return a && b && { a, b, cantidad: m.cantidad, precio: Math.max(a.precio, b.precio), nota: m.nota || '' }
   }).filter(Boolean)
   const [elegirMitad, setElegirMitad] = useState(false)
   const [confirmarBorrar, setConfirmarBorrar] = useState(false)
@@ -161,10 +163,33 @@ export default function Caja({ datos, negocio }) {
     if (pedido) guardarPedido(pedido.id, { items })
     else setPedidoId(crearPedido(nombreNuevo(), items))
   }
-  const listaMitades = () => mitades.map((m) => ({ mitad: [m.a.id, m.b.id], cantidad: m.cantidad }))
-  const cambiarCarrito = (nuevo) => {
-    guardarItems([...Object.entries(nuevo).map(([productoId, cantidad]) => ({ productoId, cantidad })), ...listaMitades()])
+  const listaMitades = () => mitades.map((m) => ({ mitad: [m.a.id, m.b.id], cantidad: m.cantidad, ...(m.nota ? { nota: m.nota } : {}) }))
+  const cambiarCarrito = (nuevo, notasNuevas = notas) => {
+    guardarItems([...Object.entries(nuevo).map(([productoId, cantidad]) => ({ productoId, cantidad, ...(notasNuevas[productoId] ? { nota: notasNuevas[productoId] } : {}) })), ...listaMitades()])
   }
+  const [editandoNota, setEditandoNota] = useState(null) // 'p:<productoId>' o 'm:<índice>'
+  const guardarNota = (clave, texto) => {
+    setEditandoNota(null)
+    const nota = texto.trim()
+    const [tipo, id] = clave.split(':')
+    if (tipo === 'p') {
+      if ((notas[id] || '') === nota) return
+      const nuevas = { ...notas }
+      if (nota) nuevas[id] = nota; else delete nuevas[id]
+      cambiarCarrito(carrito, nuevas)
+    } else {
+      guardarItems([...normales, ...listaMitades().map((m, j) => (j === Number(id) ? { mitad: m.mitad, cantidad: m.cantidad, ...(nota ? { nota } : {}) } : m))])
+    }
+  }
+  const campoNota = (clave, actual) => (editandoNota === clave ? (
+    <input className="campo-nota" autoFocus defaultValue={actual} placeholder="Ej: sin cebolla, término medio…" maxLength={80}
+      onKeyDown={(e) => { if (e.key === 'Enter') e.target.blur(); if (e.key === 'Escape') setEditandoNota(null) }}
+      onBlur={(e) => guardarNota(clave, e.target.value)} aria-label="Nota para cocina" />
+  ) : actual ? (
+    <button className="nota-item" onClick={() => setEditandoNota(clave)}><StickyNote size={13} /> {actual}</button>
+  ) : (
+    <button className="agregar-nota" onClick={() => setEditandoNota(clave)}><Plus size={13} /> Nota</button>
+  ))
   const cambiarMitades = (lista) => guardarItems([...normales, ...lista.filter((m) => m.cantidad > 0)])
   const sumarMitad = (i, n) => cambiarMitades(listaMitades().map((m, j) => (j === i ? { ...m, cantidad: m.cantidad + n } : m)))
   const agregarMitad = (a, b) => {
@@ -304,6 +329,7 @@ export default function Caja({ datos, negocio }) {
                     <div className="item-texto">
                       <div>{p.nombre}</div>
                       <small>{p.stock} disponibles</small>
+                      {campoNota('p:' + p.id, notas[p.id] || '')}
                     </div>
                     <button className="icono-borrar" onClick={() => quitar(p.id)} aria-label={`Quitar ${p.nombre}`}><Trash2 size={16} /></button>
                   </div>
@@ -324,6 +350,7 @@ export default function Caja({ datos, negocio }) {
                     <div className="item-texto">
                       <div>½ {m.a.nombre} + ½ {m.b.nombre}</div>
                       <small>Mitad y mitad</small>
+                      {campoNota('m:' + i, m.nota)}
                     </div>
                     <button className="icono-borrar" onClick={() => sumarMitad(i, -m.cantidad)} aria-label="Quitar mitad y mitad"><Trash2 size={16} /></button>
                   </div>
@@ -340,7 +367,7 @@ export default function Caja({ datos, negocio }) {
             </div>
             {lineas > 0 && (
               <div className="pedido-botones">
-                <button className="btn imprimir-comanda" onClick={() => setComanda({ nombre: pedido.nombre, fecha: new Date(), items, mitades })}>
+                <button className="btn imprimir-comanda" onClick={() => setComanda({ nombre: pedido.nombre, fecha: new Date(), items, mitades, notas })}>
                   <Printer size={17} /> Imprimir comanda
                 </button>
                 {cobertizo && unidades > 1 && (
@@ -455,10 +482,10 @@ export default function Caja({ datos, negocio }) {
           <div className="comanda-fecha">{comanda.fecha.toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' })}</div>
           <hr />
           {comanda.items.map(({ producto: p, cantidad }) => (
-            <div className="comanda-item" key={p.id}><strong>{cantidad}</strong><span>{p.nombre}</span></div>
+            <div className="comanda-item" key={p.id}><strong>{cantidad}</strong><span>{p.nombre}{comanda.notas[p.id] && <em className="comanda-nota">→ {comanda.notas[p.id]}</em>}</span></div>
           ))}
           {comanda.mitades.map((m, i) => (
-            <div className="comanda-item" key={'m' + i}><strong>{m.cantidad}</strong><span>½ {m.a.nombre} + ½ {m.b.nombre}</span></div>
+            <div className="comanda-item" key={'m' + i}><strong>{m.cantidad}</strong><span>½ {m.a.nombre} + ½ {m.b.nombre}{m.nota && <em className="comanda-nota">→ {m.nota}</em>}</span></div>
           ))}
           <hr />
         </div>

@@ -370,11 +370,6 @@ export default function Caja({ datos, negocio }) {
                 <button className="btn imprimir-comanda" onClick={() => setComanda({ nombre: pedido.nombre, fecha: new Date(), items, mitades, notas })}>
                   <Printer size={17} /> Imprimir comanda
                 </button>
-                {cobertizo && unidades > 1 && (
-                  <button className="btn imprimir-comanda" onClick={() => setDividir(true)}>
-                    <Split size={17} /> Dividir cuenta
-                  </button>
-                )}
               </div>
             )}
             <button className="continuar" disabled={lineas === 0} onClick={() => setPaso('pago')}>
